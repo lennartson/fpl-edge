@@ -32,7 +32,7 @@ export default function Setup() {
 
     setLoading(true)
     try {
-      const url = `https://corsproxy.io/?https://fantasy.premierleague.com/api/entry/${teamId}/`
+      const url = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://fantasy.premierleague.com/api/entry/' + teamId + '/')}`
       const { data } = await axios.get(url)
       const managerName = `${data.player_first_name} ${data.player_last_name}`
       localStorage.setItem('fpl_team_id', teamId)
