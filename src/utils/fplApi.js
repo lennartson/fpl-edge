@@ -140,6 +140,16 @@ export async function getLiveGameweek(gameweek) {
   return res.json()
 }
 
+export async function getTeamHistory(teamId) {
+  const res = await fetch(`${FUNCTIONS_URL}/get-team-history`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ teamId }),
+  })
+  if (!res.ok) throw new Error(`get-team-history failed: ${res.status}`)
+  return res.json()
+}
+
 export async function optimizeTransfers({ teamId, picks, budget, freeTransfers }) {
   const res = await fetch(`${FUNCTIONS_URL}/transfer-optimizer`, {
     method: 'POST',
