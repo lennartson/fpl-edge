@@ -189,3 +189,13 @@ export async function optimizeTransfers({ teamId, picks, budget, freeTransfers }
   if (!res.ok) throw new Error(`transfer-optimizer failed: ${res.status}`)
   return res.json()
 }
+
+export async function sendReminderEmail(teamId, email) {
+  const res = await fetch(`${FUNCTIONS_URL}/send-deadline-reminder`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ teamId, email }),
+  })
+  if (!res.ok) throw new Error(`send-deadline-reminder failed: ${res.status}`)
+  return res.json()
+}

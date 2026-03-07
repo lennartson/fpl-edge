@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTeam } from '../utils/fplApi'
+import { getTeam, sendReminderEmail } from '../utils/fplApi'
 
 export default function Setup() {
   const navigate = useNavigate()
@@ -8,6 +8,9 @@ export default function Setup() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [testEmailLoading, setTestEmailLoading] = useState(false)
+  const [testEmailMessage, setTestEmailMessage] = useState('')
+  const [testEmailError, setTestEmailError] = useState('')
 
   useEffect(() => {
     const storedTeamId = localStorage.getItem('fpl_team_id')
@@ -43,6 +46,31 @@ export default function Setup() {
       setError(err?.message || String(err))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleSendTestEmail() {
+    setTestEmailMessage('')
+    setTestEmailError('')
+
+    const storedTeamId = localStorage.getItem('fpl_team_id')
+    const storedEmail = localStorage.getItem('fpl_email')
+
+    if (!storedTeamId || !storedEmail) {
+      setTestEmailError('Please save your details first.')
+      return
+    }
+
+    setTestEmailLoading(true)
+    try {
+      await sendReminderEmail(storedTeamId, storedEmail)
+      setTestEmailMessage('✓ Test email sent! Check your inbox.')
+      setTimeout(() => setTestEmailMessage(''), 5000)
+    } catch (err) {
+      console.error('Send email error:', err)
+      setTestEmailError(err?.message || 'Failed to send test email')
+    } finally {
+      setTestEmailLoading(false)
     }
   }
 
@@ -101,6 +129,29 @@ export default function Setup() {
             {loading ? 'Verifying…' : 'Get Started'}
           </button>
         </form>
+
+        {localStorage.getItem('fpl_team_id') && localStorage.getItem('fpl_email') && (
+          <div className="mt-6 pt-6 border-t border-cream-darker">
+            <p className="text-xs text-charcoal/40 mb-3 text-center">Test email notifications</p>
+            <button
+              onClick={handleSendTestEmail}
+              disabled={testEmailLoading}
+              className="w-full bg-cream hover:bg-cream-darker disabled:opacity-60 disabled:cursor-not-allowed text-charcoal font-medium border border-cream-darker rounded-lg py-2 transition-colors"
+            >
+              {testEmailLoading ? 'Sending…' : '📧 Send Test Email'}
+            </button>
+            {testEmailMessage && (
+              <p className="text-green-600 text-sm mt-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                {testEmailMessage}
+              </p>
+            )}
+            {testEmailError && (
+              <p className="text-coral text-sm mt-2 bg-coral/10 border border-coral/20 rounded-lg px-3 py-2">
+                {testEmailError}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
