@@ -90,6 +90,19 @@ export async function refreshFplData() {
   return res.json()
 }
 
+export async function getTeamEntry(teamId) {
+  const res = await fetch(`${FUNCTIONS_URL}/get-team`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ teamId }),
+  })
+  if (!res.ok) throw new Error(`get-team failed: ${res.status}`)
+  return res.json()
+}
+
 export async function optimizeTransfers({ teamId, picks, budget, freeTransfers }) {
   const res = await fetch(`${FUNCTIONS_URL}/transfer-optimizer`, {
     method: 'POST',
