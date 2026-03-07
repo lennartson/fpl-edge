@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 
 const navItems = [
   { to: '/setup', emoji: '⚙️', label: 'Setup' },
@@ -9,6 +9,15 @@ const navItems = [
 ]
 
 export default function Sidebar() {
+  const navigate = useNavigate()
+
+  function handleChangeTeam() {
+    localStorage.removeItem('fpl_team_id')
+    localStorage.removeItem('fpl_email')
+    localStorage.removeItem('fpl_manager_name')
+    navigate('/setup?change=true')
+  }
+
   return (
     <aside className="w-56 min-h-screen bg-forest flex flex-col py-6">
       <div className="px-6 mb-8">
@@ -33,6 +42,15 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="px-3 pt-6 border-t border-forest-light/20">
+        <button
+          onClick={handleChangeTeam}
+          className="flex items-center gap-2 px-3 py-2 text-xs text-cream/50 hover:text-cream/70 transition-colors rounded-lg hover:bg-forest-light/30 w-full"
+        >
+          <span className="text-sm">🔄</span>
+          Change Team
+        </button>
+      </div>
     </aside>
   )
 }

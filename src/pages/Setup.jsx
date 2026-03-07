@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getTeam, sendReminderEmail } from '../utils/fplApi'
 
 export default function Setup() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [teamId, setTeamId] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -11,14 +12,25 @@ export default function Setup() {
   const [testEmailLoading, setTestEmailLoading] = useState(false)
   const [testEmailMessage, setTestEmailMessage] = useState('')
   const [testEmailError, setTestEmailError] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
     const storedTeamId = localStorage.getItem('fpl_team_id')
     const storedEmail = localStorage.getItem('fpl_email')
+    const isChangeMode = searchParams.get('change') === 'true'
+
     if (storedTeamId && storedEmail) {
-      navigate('/my-team')
+      // Pre-fill the fields
+      setTeamId(storedTeamId)
+      setEmail(storedEmail)
+      setIsUpdating(true)
+
+      // Auto-redirect only if NOT in change mode
+      if (!isChangeMode) {
+        navigate('/my-team')
+      }
     }
-  }, [navigate])
+  }, [navigate, searchParams])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -126,7 +138,7 @@ export default function Setup() {
             disabled={loading}
             className="w-full bg-forest hover:bg-coral disabled:opacity-60 disabled:cursor-not-allowed text-cream font-semibold rounded-lg py-2.5 transition-colors"
           >
-            {loading ? 'Verifying…' : 'Get Started'}
+            {loading ? 'Verifying…' : isUpdating ? 'Update Team' : 'Get Started'}
           </button>
         </form>
 
