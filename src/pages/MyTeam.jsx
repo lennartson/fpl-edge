@@ -13,24 +13,24 @@ const POSITION_LABELS = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' }
 
 function PlayerCard({ player }) {
   return (
-    <div className="flex flex-col items-center bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 w-28 text-center">
-      <span className="text-xs font-semibold text-green-400 uppercase tracking-wide">
+    <div className="flex flex-col items-center bg-white border border-cream-darker rounded-xl shadow-sm px-3 py-2.5 w-28 text-center">
+      <span className="text-xs font-semibold text-forest uppercase tracking-wide">
         {POSITION_LABELS[player.position]}
       </span>
-      <span className="text-white text-sm font-bold leading-tight mt-0.5 truncate w-full">
+      <span className="text-charcoal text-sm font-bold leading-tight mt-0.5 truncate w-full">
         {player.web_name}
       </span>
-      <span className="text-gray-400 text-xs truncate w-full">{player.teamName}</span>
+      <span className="text-charcoal/50 text-xs truncate w-full">{player.teamName}</span>
       <div className="mt-1.5 flex gap-2 text-xs">
-        <span className="text-green-400 font-semibold">{player.gwPoints} pts</span>
-        <span className="text-gray-500">£{(player.price / 10).toFixed(1)}m</span>
+        <span className="text-coral font-semibold">{player.gwPoints} pts</span>
+        <span className="text-charcoal/40">£{(player.price / 10).toFixed(1)}m</span>
       </div>
-      <span className="text-gray-500 text-xs">{player.totalPoints} tot</span>
+      <span className="text-charcoal/40 text-xs">{player.totalPoints} tot</span>
       {player.isCaptain && (
-        <span className="mt-1 text-xs bg-green-400 text-gray-950 font-bold rounded px-1.5">C</span>
+        <span className="mt-1 text-xs bg-forest text-cream font-bold rounded px-1.5">C</span>
       )}
       {player.isViceCaptain && (
-        <span className="mt-1 text-xs bg-gray-600 text-white font-bold rounded px-1.5">V</span>
+        <span className="mt-1 text-xs bg-cream-darker text-charcoal/60 font-bold rounded px-1.5">V</span>
       )}
     </div>
   )
@@ -39,7 +39,7 @@ function PlayerCard({ player }) {
 function PitchRow({ players, label }) {
   return (
     <div className="mb-4">
-      <p className="text-center text-xs text-gray-500 uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-center text-xs text-charcoal/40 uppercase tracking-widest mb-2">{label}</p>
       <div className="flex justify-center gap-2 flex-wrap">
         {players.map((p) => (
           <PlayerCard key={p.id} player={p} />
@@ -52,8 +52,8 @@ function PitchRow({ players, label }) {
 function Stat({ label, value, accent }) {
   return (
     <div className="text-center">
-      <p className={`text-lg font-bold ${accent ? 'text-green-400' : 'text-white'}`}>{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
+      <p className={`text-lg font-bold ${accent ? 'text-coral' : 'text-charcoal'}`}>{value}</p>
+      <p className="text-xs text-charcoal/40">{label}</p>
     </div>
   )
 }
@@ -138,10 +138,10 @@ export default function MyTeam() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-cream">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-gray-700 border-t-green-400 rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm">Loading your squad…</p>
+          <div className="w-10 h-10 border-4 border-cream-darker border-t-forest rounded-full animate-spin" />
+          <p className="text-charcoal/50 text-sm">Loading your squad…</p>
         </div>
       </div>
     )
@@ -149,10 +149,10 @@ export default function MyTeam() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="bg-red-400/10 border border-red-400/20 rounded-xl p-6 max-w-md text-center">
-          <p className="text-red-400 font-semibold mb-1">Failed to load team data</p>
-          <p className="text-gray-400 text-sm">{error}</p>
+      <div className="flex items-center justify-center min-h-screen px-4 bg-cream">
+        <div className="bg-coral/10 border border-coral/20 rounded-xl p-6 max-w-md text-center">
+          <p className="text-coral-dark font-semibold mb-1">Failed to load team data</p>
+          <p className="text-charcoal/60 text-sm">{error}</p>
         </div>
       </div>
     )
@@ -169,11 +169,11 @@ export default function MyTeam() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header stats */}
-      <div className="mb-6 bg-gray-900 border border-gray-800 rounded-2xl p-5">
+      <div className="mb-6 bg-white border border-cream-darker rounded-2xl shadow-sm p-5">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">{teamInfo.teamName}</h1>
-            <p className="text-gray-400 text-sm mt-0.5">
+            <h1 className="text-2xl font-bold text-charcoal">{teamInfo.teamName}</h1>
+            <p className="text-charcoal/50 text-sm mt-0.5">
               {teamInfo.managerName} · GW{teamInfo.gameweek}
             </p>
           </div>
@@ -187,8 +187,8 @@ export default function MyTeam() {
       </div>
 
       {/* Pitch */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-5 text-center">
+      <div className="bg-white border border-cream-darker rounded-2xl shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-charcoal/40 uppercase tracking-widest mb-5 text-center">
           Starting XI
         </h2>
         <PitchRow players={gkp} label="Goalkeeper" />
@@ -196,8 +196,8 @@ export default function MyTeam() {
         <PitchRow players={mid} label="Midfielders" />
         <PitchRow players={fwd} label="Forwards" />
 
-        <div className="border-t border-dashed border-gray-700 mt-2 pt-4">
-          <p className="text-center text-xs text-gray-500 uppercase tracking-widest mb-2">Bench</p>
+        <div className="border-t border-dashed border-cream-darker mt-2 pt-4">
+          <p className="text-center text-xs text-charcoal/40 uppercase tracking-widest mb-2">Bench</p>
           <div className="flex justify-center gap-2 flex-wrap">
             {bench
               .sort((a, b) => a.pickPosition - b.pickPosition)
