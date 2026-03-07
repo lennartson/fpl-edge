@@ -31,5 +31,8 @@ jobs:
       - name: Deploy edge functions
         run: |
           supabase functions deploy get-team
+          supabase functions deploy get-team-picks
           supabase functions deploy refresh-fpl-data
           supabase functions deploy transfer-optimizer
+          supabase functions deploy get-live-gameweek
+          supabase functions deploy get-team-history
