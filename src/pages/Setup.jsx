@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTeamEntry } from '../utils/fplApi'
+import { getTeam } from '../utils/fplApi'
 
 export default function Setup() {
   const navigate = useNavigate()
@@ -32,7 +32,7 @@ export default function Setup() {
 
     setLoading(true)
     try {
-      const data = await getTeamEntry(teamId)
+      const data = await getTeam(teamId)
       const managerName = `${data.player_first_name} ${data.player_last_name}`
       localStorage.setItem('fpl_team_id', teamId)
       localStorage.setItem('fpl_email', email)

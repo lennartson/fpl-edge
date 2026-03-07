@@ -7,6 +7,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const FUNCTIONS_URL = `${supabaseUrl}/functions/v1`
 
+const authHeaders = {
+  'Content-Type': 'application/json',
+  'apikey': supabaseAnonKey,
+  'Authorization': `Bearer ${supabaseAnonKey}`,
+}
+
 // ── Players ──────────────────────────────────────────────────────────────────
 
 export async function getPlayers({ position, limit = 100 } = {}) {
@@ -78,41 +84,56 @@ export async function saveUserPreferences(teamId, email) {
 
 // ── Edge Functions ────────────────────────────────────────────────────────────
 
-export async function refreshFplData() {
-  const res = await fetch(`${FUNCTIONS_URL}/refresh-fpl-data`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-    },
-  })
-  if (!res.ok) throw new Error(`refresh-fpl-data failed: ${res.status}`)
-  return res.json()
-}
-
-export async function getTeamEntry(teamId) {
+export async function getTeam(teamId) {
   const res = await fetch(`${FUNCTIONS_URL}/get-team`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-    },
+    headers: authHeaders,
     body: JSON.stringify({ teamId }),
   })
   if (!res.ok) throw new Error(`get-team failed: ${res.status}`)
   return res.json()
 }
 
+export async function getBootstrapStatic() {
+  // Ensure Supabase data is fresh
+  const refreshRes = await fetch(`${FUNCTIONS_URL}/refresh-fpl-data`, {
+    method: 'POST',
+    headers: authHeaders,
+  })
+  if (!refreshRes.ok) throw new Error(`refresh-fpl-data failed: ${refreshRes.status}`)
+
+  // Query all three tables in parallel
+  const [playersResult, teamsResult, gameweeksResult] = await Promise.all([
+    supabase.from('players').select('*'),
+    supabase.from('teams').select('*').order('id'),
+    supabase.from('gameweeks').select('*').order('id'),
+  ])
+
+  if (playersResult.error) throw playersResult.error
+  if (teamsResult.error) throw teamsResult.error
+  if (gameweeksResult.error) throw gameweeksResult.error
+
+  return {
+    elements: playersResult.data,
+    teams: teamsResult.data,
+    events: gameweeksResult.data,
+  }
+}
+
+export async function getTeamPicks(teamId, gameweek) {
+  const res = await fetch(`${FUNCTIONS_URL}/get-team-picks`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ teamId, gameweek }),
+  })
+  if (!res.ok) throw new Error(`get-team-picks failed: ${res.status}`)
+  return res.json()
+}
+
 export async function optimizeTransfers({ teamId, picks, budget, freeTransfers }) {
   const res = await fetch(`${FUNCTIONS_URL}/transfer-optimizer`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-    },
+    headers: authHeaders,
     body: JSON.stringify({ teamId, picks, budget, freeTransfers }),
   })
   if (!res.ok) throw new Error(`transfer-optimizer failed: ${res.status}`)
