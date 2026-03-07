@@ -21,6 +21,7 @@ function generateEmailHtml(data: any): string {
     captainPicks,
     topTransfers,
     chipAlerts,
+    teamMap,
   } = data
 
   const captain = captainPicks?.[0]
@@ -100,7 +101,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${captain.name}</div>
-            <div class="pick-meta">Team ${captain.team} • xPS: ${captain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[captain.team] || `Team ${captain.team}`} • xPS: ${captain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps">${captain.xps.toFixed(1)}</div>
@@ -114,7 +115,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${viceCaptain.name}</div>
-            <div class="pick-meta">Team ${viceCaptain.team} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[viceCaptain.team] || `Team ${viceCaptain.team}`} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps" style="color: #e8603c;">${viceCaptain.xps.toFixed(1)}</div>
@@ -253,10 +254,11 @@ async function sendReminderEmail(
       console.warn(`transfer-optimizer call failed: ${err}, using fallback data`)
     }
 
-    // Fetch team name
-    const { data: teams, error: teamsErr } = await supabase.from('teams').select('*').limit(1)
+    // Fetch all teams to build teamId → name mapping
+    const { data: teams, error: teamsErr } = await supabase.from('teams').select('id, short_name')
+    const teamMap: Record<number, string> = {}
     if (!teamsErr && teams && teams.length > 0) {
-      const teamNameData = teams[0].name || 'Your Team'
+      teams.forEach((t: any) => { teamMap[t.id] = t.short_name })
     }
 
     // Generate email HTML
@@ -267,6 +269,7 @@ async function sendReminderEmail(
       captainPicks: optimizerData.captainPicks || [],
       topTransfers: optimizerData.topTransfers || [],
       chipAlerts: optimizerData.chipAlerts || [],
+      teamMap,
     })
 
     // Send via Resend

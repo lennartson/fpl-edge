@@ -326,8 +326,8 @@ Deno.serve(async (req) => {
       .filter((p) => p.position <= 11)
       .reduce((sum, p) => sum + (xpsMap.get(p.element) ?? 0), 0)
 
-    if (benchXps / 4 > squadXpsPerPlayer * 0.8) {
-      chipAlerts.push('BENCH_BOOST: Your bench has above-average xPS — consider using Bench Boost.')
+    if (benchXps / 4 > (starterXps / 11) * 1.2) {
+      chipAlerts.push('BENCH_BOOST: Your bench is exceptionally strong (120%+ of starter average xPS) — Bench Boost could deliver significant value.')
     }
     if (captainOptions.length > 0 && captainOptions[0].xps > squadXpsPerPlayer * 2.5) {
       chipAlerts.push('TRIPLE_CAPTAIN: Top captain pick has exceptional xPS — Triple Captain could be high value.')
