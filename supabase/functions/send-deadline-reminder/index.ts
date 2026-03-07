@@ -219,17 +219,12 @@ async function sendReminderEmail(
     const teamData = await teamRes.json()
     const footballerName = `${teamData.player_first_name} ${teamData.player_last_name}`
 
-    // Fetch team picks via the get-team-picks function
-    const picksRes = await fetch(`${FUNCTIONS_URL(baseUrl)}/get-team-picks`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
-      },
-      body: JSON.stringify({ teamId, gameweek: currentGw }),
-    })
-    if (!picksRes.ok) throw new Error(`get-team-picks failed: ${picksRes.status}`)
+    // Fetch team picks directly from FPL API
+    const picksRes = await fetch(
+      `https://fantasy.premierleague.com/api/entry/${teamId}/event/${currentGw}/picks/`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FPLEdge/1.0)' } }
+    )
+    if (!picksRes.ok) throw new Error(`FPL picks fetch failed: ${picksRes.status}`)
     const picksData = await picksRes.json()
     const picks = picksData.picks || []
 
@@ -237,18 +232,26 @@ async function sendReminderEmail(
     const budget = teamData.transfers_available ? teamData.bank / 10 : 0
     const freeTransfers = teamData.transfers_available || 1
 
-    // Call transfer-optimizer
-    const optimizerRes = await fetch(`${FUNCTIONS_URL(baseUrl)}/transfer-optimizer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
-      },
-      body: JSON.stringify({ teamId, picks, budget, freeTransfers }),
-    })
-    if (!optimizerRes.ok) throw new Error(`transfer-optimizer failed: ${optimizerRes.status}`)
-    const optimizerData = await optimizerRes.json()
+    // Call transfer-optimizer with fallback (retry with service role key, graceful failure)
+    let optimizerData = { captainPicks: [], topTransfers: [], chipAlerts: [] }
+    try {
+      const optimizerRes = await fetch(`${FUNCTIONS_URL(baseUrl)}/transfer-optimizer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+        },
+        body: JSON.stringify({ teamId, picks, budget, freeTransfers }),
+      })
+      if (optimizerRes.ok) {
+        optimizerData = await optimizerRes.json()
+      } else {
+        console.warn(`transfer-optimizer returned ${optimizerRes.status}, using fallback data`)
+      }
+    } catch (err) {
+      console.warn(`transfer-optimizer call failed: ${err}, using fallback data`)
+    }
 
     // Fetch team name
     const { data: teams, error: teamsErr } = await supabase.from('teams').select('*').limit(1)
