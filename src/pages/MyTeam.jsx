@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTeam, getBootstrapStatic, getTeamPicks } from '../utils/fplApi'
+import { getTeam, getBootstrapStatic, getTeamPicks, getLiveGameweek } from '../utils/fplApi'
 
 const POSITION_LABELS = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' }
 
@@ -77,21 +77,28 @@ export default function MyTeam() {
           bootstrap.events.find((e) => e.is_next)?.id ||
           1
 
-        const picks = await getTeamPicks(teamId, currentGw)
+        const [picks, liveData] = await Promise.all([
+          getTeamPicks(teamId, currentGw),
+          getLiveGameweek(currentGw),
+        ])
 
         const playerMap = {}
         bootstrap.elements.forEach((el) => { playerMap[el.id] = el })
         const teamMap = {}
         bootstrap.teams.forEach((t) => { teamMap[t.id] = t.short_name })
 
+        const liveMap = {}
+        liveData.elements.forEach((el) => { liveMap[el.id] = el.stats.total_points })
+
         const enriched = picks.picks.map((pick) => {
           const el = playerMap[pick.element]
+          const basePoints = liveMap[pick.element] ?? 0
           return {
             id: pick.element,
             web_name: el.web_name,
             teamName: teamMap[el.team_id],
             position: el.position,
-            gwPoints: picks.entry_history.points,
+            gwPoints: basePoints * pick.multiplier,
             totalPoints: el.total_points,
             price: el.price,
             isCaptain: pick.is_captain,
