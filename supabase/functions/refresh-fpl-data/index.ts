@@ -17,9 +17,13 @@ Deno.serve(async (req) => {
   )
 
   try {
+    const fplHeaders = {
+      'User-Agent': 'Mozilla/5.0 (compatible; FPLEdge/1.0)',
+      'Accept': 'application/json',
+    }
     const [bootstrapRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/'),
-      fetch('https://fantasy.premierleague.com/api/fixtures/'),
+      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: fplHeaders }),
+      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: fplHeaders }),
     ])
 
     if (!bootstrapRes.ok) throw new Error(`Bootstrap fetch failed: ${bootstrapRes.status}`)

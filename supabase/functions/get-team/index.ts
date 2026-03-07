@@ -18,7 +18,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    const res = await fetch(`https://fantasy.premierleague.com/api/entry/${teamId}/`)
+    const res = await fetch(`https://fantasy.premierleague.com/api/entry/${teamId}/`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FPLEdge/1.0)',
+        'Accept': 'application/json',
+      },
+    })
     if (!res.ok) throw new Error(`FPL API responded with ${res.status}`)
 
     const data = await res.json()
