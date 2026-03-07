@@ -18,16 +18,27 @@ Deno.serve(async (req) => {
       )
     }
 
+    console.log(`Fetching leagues for team ${teamId}`)
     const res = await fetch(`https://fantasy.premierleague.com/api/entry/${teamId}/`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; FPLEdge/1.0)',
         'Accept': 'application/json',
       },
     })
-    if (!res.ok) throw new Error(`FPL API responded with ${res.status}`)
+    
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`FPL API responded with ${res.status}: ${text}`)
+    }
 
     const data = await res.json()
+    
+    if (!data) {
+      throw new Error('FPL API returned empty response')
+    }
+
     const leagues: any[] = data.leagues?.classic || []
+    console.log(`Successfully fetched ${leagues.length} leagues for team ${teamId}`)
 
     return new Response(
       JSON.stringify({ leagues }),
@@ -36,7 +47,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error('get-entry-leagues error:', err)
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: String(err), leagues: [] }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

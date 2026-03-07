@@ -271,14 +271,28 @@ function ChipAlert({ alert }) {
   )
 }
 
-function outReason(xps) {
-  if (xps < 5) return 'poor form / tough fixtures'
-  if (xps < 9) return 'better option available'
-  return 'tactical upgrade'
-}
-
 function TransferCard({ combo }) {
-  const isFree = combo.transferCost === 0
+  const isRoll = combo.transfers === 0
+  const isFree = combo.transferCost === 0 && combo.transfers > 0
+
+  if (isRoll) {
+    return (
+      <div className="border-2 border-amber-300 rounded-xl p-4 mb-3 bg-amber-50">
+        <div className="flex items-start justify-between gap-4 mb-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+              🏦 Roll Transfer
+            </span>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xl font-bold text-amber-700">+{combo.netGain}</p>
+            <p className="text-xs text-charcoal/40">banking flexibility</p>
+          </div>
+        </div>
+        <p className="text-sm text-amber-900">{combo.reason}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="border border-cream-darker rounded-xl p-4 mb-3">
@@ -312,7 +326,7 @@ function TransferCard({ combo }) {
                 <p className="text-sm font-semibold text-charcoal">{p.name}</p>
                 <span className="text-xs font-bold text-coral ml-2">{p.xps} xPS</span>
               </div>
-              <p className="text-xs text-charcoal/40">{outReason(p.xps)}</p>
+              <p className="text-xs text-charcoal/40">{p.reason || 'Not available'}</p>
             </div>
           ))}
         </div>
