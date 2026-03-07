@@ -354,6 +354,15 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+[functions.get-team]
+verify_jwt = false
+
+[functions.refresh-fpl-data]
+verify_jwt = false
+
+[functions.transfer-optimizer]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
