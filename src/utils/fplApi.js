@@ -82,8 +82,9 @@ export async function refreshFplData() {
   const res = await fetch(`${FUNCTIONS_URL}/refresh-fpl-data`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json',
+      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`,
     },
   })
   if (!res.ok) throw new Error(`refresh-fpl-data failed: ${res.status}`)
@@ -94,8 +95,9 @@ export async function getTeamEntry(teamId) {
   const res = await fetch(`${FUNCTIONS_URL}/get-team`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json',
+      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`,
     },
     body: JSON.stringify({ teamId }),
   })
@@ -107,8 +109,9 @@ export async function optimizeTransfers({ teamId, picks, budget, freeTransfers }
   const res = await fetch(`${FUNCTIONS_URL}/transfer-optimizer`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json',
+      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`,
     },
     body: JSON.stringify({ teamId, picks, budget, freeTransfers }),
   })
