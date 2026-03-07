@@ -274,7 +274,7 @@ async function sendReminderEmail(teamId: number, email: string): Promise<void> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'FPL Edge <notifications@yourdomain.com>',
+        from: 'FPL Edge <onboarding@resend.dev>',
         to: email,
         subject: `FPL Edge — GW${currentGw} Deadline Reminder`,
         html: emailHtml,
