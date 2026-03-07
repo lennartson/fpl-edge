@@ -34,13 +34,15 @@ export default function Setup() {
     try {
       const url = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://fantasy.premierleague.com/api/entry/' + teamId + '/')}`
       const { data } = await axios.get(url)
+      console.log('FPL API response:', data)
       const managerName = `${data.player_first_name} ${data.player_last_name}`
       localStorage.setItem('fpl_team_id', teamId)
       localStorage.setItem('fpl_email', email)
       localStorage.setItem('fpl_manager_name', managerName)
       navigate('/my-team')
-    } catch {
-      setError('Could not find that Team ID. Please check it and try again.')
+    } catch (err) {
+      console.error('FPL API error:', err)
+      setError(err?.message || String(err))
     } finally {
       setLoading(false)
     }
