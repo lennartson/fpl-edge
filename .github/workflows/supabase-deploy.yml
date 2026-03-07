@@ -37,3 +37,6 @@ jobs:
           supabase functions deploy transfer-optimizer
           supabase functions deploy get-live-gameweek
           supabase functions deploy get-team-history
+          supabase functions deploy get-entry-leagues
+          supabase functions deploy get-mini-league
+          supabase functions deploy get-top-managers

@@ -150,6 +150,36 @@ export async function getTeamHistory(teamId) {
   return res.json()
 }
 
+export async function getEntryLeagues(teamId) {
+  const res = await fetch(`${FUNCTIONS_URL}/get-entry-leagues`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ teamId }),
+  })
+  if (!res.ok) throw new Error(`get-entry-leagues failed: ${res.status}`)
+  return res.json()
+}
+
+export async function getMiniLeague(leagueId, gameweek) {
+  const res = await fetch(`${FUNCTIONS_URL}/get-mini-league`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ leagueId, gameweek }),
+  })
+  if (!res.ok) throw new Error(`get-mini-league failed: ${res.status}`)
+  return res.json()
+}
+
+export async function getTopManagers(gameweek) {
+  const res = await fetch(`${FUNCTIONS_URL}/get-top-managers`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ gameweek }),
+  })
+  if (!res.ok) throw new Error(`get-top-managers failed: ${res.status}`)
+  return res.json()
+}
+
 export async function optimizeTransfers({ teamId, picks, budget, freeTransfers }) {
   const res = await fetch(`${FUNCTIONS_URL}/transfer-optimizer`, {
     method: 'POST',
