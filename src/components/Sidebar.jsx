@@ -12,9 +12,6 @@ export default function Sidebar() {
   const navigate = useNavigate()
 
   function handleChangeTeam() {
-    localStorage.removeItem('fpl_team_id')
-    localStorage.removeItem('fpl_email')
-    localStorage.removeItem('fpl_manager_name')
     navigate('/setup?change=true')
   }
 
