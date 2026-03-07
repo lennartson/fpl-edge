@@ -29,3 +29,6 @@ jobs:
           supabase functions deploy transfer-optimizer --project-ref $PROJECT_REF
           supabase functions deploy get-live-gameweek --project-ref $PROJECT_REF
           supabase functions deploy get-team-history --project-ref $PROJECT_REF
+          supabase functions deploy get-entry-leagues --project-ref $PROJECT_REF
+          supabase functions deploy get-mini-league --project-ref $PROJECT_REF
+          supabase functions deploy get-top-managers --project-ref $PROJECT_REF
