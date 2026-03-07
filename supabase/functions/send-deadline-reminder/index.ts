@@ -293,6 +293,48 @@ async function sendReminderEmail(teamId: number, email: string): Promise<void> {
   }
 }
 
+async function checkDeadlineWindow(): Promise<{ shouldSend: boolean; reason: string } | null> {
+  try {
+    // Fetch next gameweek
+    const { data: nextGw, error: gwErr } = await supabase
+      .from('gameweeks')
+      .select('id, deadline_time')
+      .eq('is_next', true)
+      .single()
+
+    if (gwErr || !nextGw) {
+      console.log('No next gameweek found or error:', gwErr?.message)
+      return { shouldSend: false, reason: 'No next gameweek found' }
+    }
+
+    if (!nextGw.deadline_time) {
+      console.log('Next gameweek has no deadline_time set')
+      return { shouldSend: false, reason: 'Deadline time not set' }
+    }
+
+    const deadlineDate = new Date(nextGw.deadline_time)
+    const now = new Date()
+    const hoursUntilDeadline = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+    console.log(`Current time: ${now.toISOString()}`)
+    console.log(`Deadline: ${deadlineDate.toISOString()}`)
+    console.log(`Hours until deadline: ${hoursUntilDeadline.toFixed(1)}`)
+
+    // Send if within 24-26 hours before deadline (2-hour window to avoid double-sends)
+    if (hoursUntilDeadline >= 24 && hoursUntilDeadline < 26) {
+      return { shouldSend: true, reason: `Within 24-26h window (${hoursUntilDeadline.toFixed(1)}h remaining)` }
+    }
+
+    return {
+      shouldSend: false,
+      reason: `Outside 24-26h window (${hoursUntilDeadline.toFixed(1)}h remaining)`,
+    }
+  } catch (err) {
+    console.error('Error checking deadline window:', err)
+    throw err
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -307,7 +349,7 @@ Deno.serve(async (req) => {
     const { teamId, email } = body
 
     if (teamId && email) {
-      // Single targeted send
+      // Single targeted send (for manual testing, skip deadline check)
       await sendReminderEmail(teamId, email)
       return new Response(
         JSON.stringify({ success: true, message: 'Reminder sent' }),
@@ -315,7 +357,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Batch send to all users
+    // Batch send to all users — check deadline window first
+    const deadlineCheck = await checkDeadlineWindow()
+    if (!deadlineCheck?.shouldSend) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: deadlineCheck?.reason || 'Outside deadline window' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Deadline check passed, proceeding with batch send')
+
     const { data: users, error: err } = await supabase
       .from('user_preferences')
       .select('team_id, email')
@@ -328,7 +380,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const results = { sent: 0, failed: 0, errors: [] as string[] }
+    const results = { sent: 0, failed: 0, errors: [] as string[], deadline: deadlineCheck.reason }
 
     for (const user of users as UserPreference[]) {
       try {
