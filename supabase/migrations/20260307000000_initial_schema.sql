@@ -57,8 +57,18 @@ ALTER TABLE fixtures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gameweeks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "public read players"          ON players          FOR SELECT USING (true);
-CREATE POLICY "public read teams"            ON teams            FOR SELECT USING (true);
-CREATE POLICY "public read fixtures"         ON fixtures         FOR SELECT USING (true);
-CREATE POLICY "public read gameweeks"        ON gameweeks        FOR SELECT USING (true);
-CREATE POLICY "public read user_preferences" ON user_preferences FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY "public read players"          ON players          FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "public read teams"            ON teams            FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "public read fixtures"         ON fixtures         FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "public read gameweeks"        ON gameweeks        FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "public read user_preferences" ON user_preferences FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
