@@ -6,13 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-)
-
-const FUNCTIONS_URL = `${Deno.env.get('SUPABASE_URL')}/functions/v1`
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
+const FUNCTIONS_URL = (baseUrl: string) => `${baseUrl}/functions/v1`
 
 interface UserPreference {
   team_id: number
@@ -197,7 +191,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
   `.trim()
 }
 
-async function sendReminderEmail(teamId: number, email: string): Promise<void> {
+async function sendReminderEmail(
+  teamId: number,
+  email: string,
+  supabase: any,
+  resendKey: string,
+  baseUrl: string
+): Promise<void> {
   try {
     console.log(`Sending reminder to ${email} for team ${teamId}`)
 
@@ -220,7 +220,7 @@ async function sendReminderEmail(teamId: number, email: string): Promise<void> {
     const footballerName = `${teamData.player_first_name} ${teamData.player_last_name}`
 
     // Fetch team picks via the get-team-picks function
-    const picksRes = await fetch(`${FUNCTIONS_URL}/get-team-picks`, {
+    const picksRes = await fetch(`${FUNCTIONS_URL(baseUrl)}/get-team-picks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ async function sendReminderEmail(teamId: number, email: string): Promise<void> {
     const freeTransfers = teamData.transfers_available || 1
 
     // Call transfer-optimizer
-    const optimizerRes = await fetch(`${FUNCTIONS_URL}/transfer-optimizer`, {
+    const optimizerRes = await fetch(`${FUNCTIONS_URL(baseUrl)}/transfer-optimizer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ async function sendReminderEmail(teamId: number, email: string): Promise<void> {
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Authorization': `Bearer ${resendKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -293,7 +293,7 @@ async function sendReminderEmail(teamId: number, email: string): Promise<void> {
   }
 }
 
-async function checkDeadlineWindow(): Promise<{ shouldSend: boolean; reason: string } | null> {
+async function checkDeadlineWindow(supabase: any): Promise<{ shouldSend: boolean; reason: string } | null> {
   try {
     // Fetch next gameweek
     const { data: nextGw, error: gwErr } = await supabase
@@ -350,7 +350,13 @@ Deno.serve(async (req) => {
 
     if (teamId && email) {
       // Single targeted send (for manual testing, skip deadline check)
-      await sendReminderEmail(teamId, email)
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') || '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      )
+      const resendKey = Deno.env.get('RESEND_API_KEY') || ''
+      const baseUrl = Deno.env.get('SUPABASE_URL') || ''
+      await sendReminderEmail(teamId, email, supabase, resendKey, baseUrl)
       return new Response(
         JSON.stringify({ success: true, message: 'Reminder sent' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -358,7 +364,13 @@ Deno.serve(async (req) => {
     }
 
     // Batch send to all users — check deadline window first
-    const deadlineCheck = await checkDeadlineWindow()
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    )
+    const resendKey = Deno.env.get('RESEND_API_KEY') || ''
+    const baseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const deadlineCheck = await checkDeadlineWindow(supabase)
     if (!deadlineCheck?.shouldSend) {
       return new Response(
         JSON.stringify({ skipped: true, reason: deadlineCheck?.reason || 'Outside deadline window' }),
@@ -384,7 +396,7 @@ Deno.serve(async (req) => {
 
     for (const user of users as UserPreference[]) {
       try {
-        await sendReminderEmail(user.team_id, user.email)
+        await sendReminderEmail(user.team_id, user.email, supabase, resendKey, baseUrl)
         results.sent++
       } catch (err) {
         results.failed++
