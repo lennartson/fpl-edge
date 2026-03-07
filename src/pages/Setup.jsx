@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { getTeamEntry } from '../utils/fplApi'
 
 export default function Setup() {
   const navigate = useNavigate()
@@ -32,9 +32,7 @@ export default function Setup() {
 
     setLoading(true)
     try {
-      const url = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://fantasy.premierleague.com/api/entry/' + teamId + '/')}`
-      const { data } = await axios.get(url)
-      console.log('FPL API response:', data)
+      const data = await getTeamEntry(teamId)
       const managerName = `${data.player_first_name} ${data.player_last_name}`
       localStorage.setItem('fpl_team_id', teamId)
       localStorage.setItem('fpl_email', email)
