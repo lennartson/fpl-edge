@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-
-const PROXY = 'https://api.allorigins.win/raw?url='
-const FPL = 'https://fantasy.premierleague.com/api'
-
-function proxy(url) {
-  return `${PROXY}${encodeURIComponent(url)}`
-}
+import { getTeam, getBootstrapStatic, getTeamPicks } from '../utils/fplApi'
 
 const POSITION_LABELS = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' }
 
@@ -23,7 +16,7 @@ function PlayerCard({ player }) {
       <span className="text-charcoal/50 text-xs truncate w-full">{player.teamName}</span>
       <div className="mt-1.5 flex gap-2 text-xs">
         <span className="text-coral font-semibold">{player.gwPoints} pts</span>
-        <span className="text-charcoal/40">£{(player.price / 10).toFixed(1)}m</span>
+        <span className="text-charcoal/40">£{player.price.toFixed(1)}m</span>
       </div>
       <span className="text-charcoal/40 text-xs">{player.totalPoints} tot</span>
       {player.isCaptain && (
@@ -74,23 +67,17 @@ export default function MyTeam() {
 
     async function fetchAll() {
       try {
-        const [bootstrapRes, entryRes] = await Promise.all([
-          axios.get(proxy(`${FPL}/bootstrap-static/`)),
-          axios.get(proxy(`${FPL}/entry/${teamId}/`)),
+        const [bootstrap, entry] = await Promise.all([
+          getBootstrapStatic(),
+          getTeam(teamId),
         ])
-
-        const bootstrap = bootstrapRes.data
-        const entry = entryRes.data
 
         const currentGw =
           bootstrap.events.find((e) => e.is_current)?.id ||
           bootstrap.events.find((e) => e.is_next)?.id ||
           1
 
-        const picksRes = await axios.get(
-          proxy(`${FPL}/entry/${teamId}/event/${currentGw}/picks/`)
-        )
-        const picks = picksRes.data
+        const picks = await getTeamPicks(teamId, currentGw)
 
         const playerMap = {}
         bootstrap.elements.forEach((el) => { playerMap[el.id] = el })
@@ -102,11 +89,11 @@ export default function MyTeam() {
           return {
             id: pick.element,
             web_name: el.web_name,
-            teamName: teamMap[el.team],
-            position: el.element_type,
-            gwPoints: el.event_points,
+            teamName: teamMap[el.team_id],
+            position: el.position,
+            gwPoints: picks.entry_history.points,
             totalPoints: el.total_points,
-            price: el.now_cost,
+            price: el.price,
             isCaptain: pick.is_captain,
             isViceCaptain: pick.is_vice_captain,
             multiplier: pick.multiplier,
