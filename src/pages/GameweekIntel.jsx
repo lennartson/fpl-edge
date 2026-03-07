@@ -463,7 +463,11 @@ export default function GameweekIntel() {
 
         // Step 3 — optimizer (needs picks)
         const budget = teamEntry.last_deadline_bank || 0
-        const freeTransfers = 1 // FPL API doesn't expose remaining FT cleanly; default to 1
+        // Calculate free transfers: transfers_limit (max) minus event_transfers (used this GW) plus any rolled transfers
+        const transfersLimit = teamEntry.transfers?.transfers_limit || 1
+        const eventTransfers = teamEntry.transfers?.event_transfers || 0
+        const freeTransfers = Math.max(1, transfersLimit - eventTransfers)
+        console.log(`Free transfers calculated: limit=${transfersLimit}, used=${eventTransfers}, remaining=${freeTransfers}`)
         const optimizerResult = await optimizeTransfers({
           teamId: Number(teamId),
           picks: picksArray,
