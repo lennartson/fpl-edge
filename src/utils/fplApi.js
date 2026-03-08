@@ -85,6 +85,18 @@ export async function saveUserPreferences(teamId, email) {
 // ── Edge Functions ────────────────────────────────────────────────────────────
 
 export async function getTeam(teamId) {
+  // Check team_cache first — 1-hour TTL
+  const { data: cached } = await supabase
+    .from('team_cache')
+    .select('data, expires_at')
+    .eq('team_id', teamId)
+    .single()
+
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
+    return cached.data
+  }
+
+  // Cache miss — call edge function (which will also populate the cache)
   const res = await fetch(`${FUNCTIONS_URL}/get-team`, {
     method: 'POST',
     headers: authHeaders,
@@ -185,6 +197,19 @@ export async function getEntryLeagues(teamId) {
 }
 
 export async function getMiniLeague(leagueId, gameweek) {
+  // Check mini_league_cache first (composite PK: league_id + gameweek)
+  const { data: cached } = await supabase
+    .from('mini_league_cache')
+    .select('data, expires_at')
+    .eq('league_id', leagueId)
+    .eq('gameweek', gameweek)
+    .single()
+
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
+    return cached.data
+  }
+
+  // Cache miss — call edge function (which will also populate the cache)
   const res = await fetch(`${FUNCTIONS_URL}/get-mini-league`, {
     method: 'POST',
     headers: authHeaders,
@@ -195,6 +220,18 @@ export async function getMiniLeague(leagueId, gameweek) {
 }
 
 export async function getTopManagers(gameweek) {
+  // Check top_managers_cache first
+  const { data: cached } = await supabase
+    .from('top_managers_cache')
+    .select('data, expires_at')
+    .eq('gameweek', gameweek)
+    .single()
+
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
+    return cached.data
+  }
+
+  // Cache miss — call edge function (which will also populate the cache)
   const res = await fetch(`${FUNCTIONS_URL}/get-top-managers`, {
     method: 'POST',
     headers: authHeaders,
