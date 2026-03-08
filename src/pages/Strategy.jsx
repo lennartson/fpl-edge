@@ -364,7 +364,8 @@ export default function Strategy() {
           getTeamPicks(Number(teamId), gw),
           getTeamTransfers(Number(teamId)),
         ])
-        const picks = picksData.picks || []
+        console.log('DEBUG raw picksData:', picksData)
+        const picks = picksData.picks || picksData || []
 
         // Build purchase price map from transfers history (most recent transfer IN wins)
         const purchasePriceMap = {}
