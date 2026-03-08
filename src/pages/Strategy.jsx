@@ -12,14 +12,12 @@ import {
 
 const POSITION_LABELS = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' }
 
-// FPL 2025/26: one wildcard per half, one of everything else per season
-const HALF_TWO_START_GW = 19
-
+// FPL allows 2 wildcards per season, 1 of everything else
 const CHIP_META = {
   wildcard: {
     label: 'Wildcard',
     icon: '🃏',
-    maxUses: 1,
+    maxUses: 2,
     description:
       'Make unlimited free transfers for one gameweek — your squad stays the same afterwards.',
   },
@@ -169,9 +167,7 @@ function getChipRecommendation(chipKey, gwAnalysis) {
   }
 }
 
-function ChipCard({ chipKey, meta, usedInstances, allInstances, gwAnalysis }) {
-  // usedInstances = current-half uses only (determines availability)
-  // allInstances  = all-time uses (shown in history badges)
+function ChipCard({ chipKey, meta, usedInstances, gwAnalysis }) {
   const usedCount = usedInstances.length
   const available = usedCount < meta.maxUses
   const remaining = meta.maxUses - usedCount
@@ -189,11 +185,11 @@ function ChipCard({ chipKey, meta, usedInstances, allInstances, gwAnalysis }) {
           <span className="text-2xl">{meta.icon}</span>
           <div>
             <p className="font-bold text-charcoal leading-tight">{meta.label}</p>
-            {chipKey === 'wildcard' ? (
+            {meta.maxUses > 1 && (
               <p className="text-xs text-charcoal/40">
-                {remaining} of 1 remaining this half
+                {remaining} of {meta.maxUses} remaining
               </p>
-            ) : null}
+            )}
           </div>
         </div>
         {available ? (
@@ -210,10 +206,10 @@ function ChipCard({ chipKey, meta, usedInstances, allInstances, gwAnalysis }) {
       {/* Description */}
       <p className="text-sm text-charcoal/60 leading-snug">{meta.description}</p>
 
-      {/* Usage history badges — show all-time uses for context */}
-      {allInstances.length > 0 && (
+      {/* Usage history badges */}
+      {usedInstances.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {allInstances.map((u, i) => (
+          {usedInstances.map((u, i) => (
             <span
               key={i}
               className="text-xs text-charcoal/50 bg-cream-darker px-2 py-0.5 rounded-full"
@@ -277,18 +273,12 @@ function PricePlayerRow({ player, teamMap, direction }) {
 
 // ── Section 3: Squad Value Tracker ───────────────────────────────────────────
 
-function SquadValueRow({ pick, player, teamName, purchasePriceMap }) {
+function SquadValueRow({ pick, player, teamName }) {
   if (!player) return null
-  const purchasePrice = purchasePriceMap?.[pick.element] 
-    ?? pick.selling_price 
-    ?? (parseFloat(player.price) * 10)
-  const purchased = (purchasePrice ?? 0) / 10
+  const purchased = (pick.purchase_price ?? 0) / 10
   const selling = (pick.selling_price ?? 0) / 10
   const current = parseFloat(player.price)
   const gain = selling - purchased
-  
-  // Debug logging - always log to see pick structure
-  console.log('DEBUG SquadValueRow pick:', { element: pick.element, selling_price: pick.selling_price, has_all_fields: Object.keys(pick).length })
 
   return (
     <tr className="border-b border-cream-darker last:border-0 hover:bg-cream/40 transition-colors">
@@ -338,7 +328,6 @@ export default function Strategy() {
   const [fallingPlayers, setFallingPlayers] = useState([])
   const [squadPicks, setSquadPicks] = useState([])
   const [squadValue, setSquadValue] = useState({ current: 0, purchased: 0 })
-  const [purchasePriceMap, setPurchasePriceMap] = useState({})
 
   useEffect(() => {
     const teamId = localStorage.getItem('fpl_team_id')
@@ -370,51 +359,43 @@ export default function Strategy() {
         teams.forEach((t) => { tMap[t.id] = t.short_name })
         setTeamMap(tMap)
 
-        // Step 2 — picks and transfers (needs current GW)
+        // Step 2 — picks + transfers (needs current GW)
         const [picksData, transfersData] = await Promise.all([
           getTeamPicks(Number(teamId), gw),
           getTeamTransfers(Number(teamId)),
         ])
-        console.log('DEBUG picksData structure:', { 
-          has_picks_property: 'picks' in picksData, 
-          is_array: Array.isArray(picksData),
-          typeof: typeof picksData,
-          keys: Object.keys(picksData).slice(0, 10),
-          first_element: picksData[0] || picksData.picks?.[0]
-        })
-        const picks = picksData.picks || picksData
-        
-        // Build purchase price map from transfers history
+        const picks = picksData.picks || []
+
+        // Build purchase price map from transfers history (most recent transfer IN wins)
         const purchasePriceMap = {}
-        const transfers = transfersData || []
-        // Sort oldest first so latest transfer wins
+        const transfers = Array.isArray(transfersData) ? transfersData : []
         transfers
           .sort((a, b) => new Date(a.time) - new Date(b.time))
-          .forEach(t => {
-            purchasePriceMap[t.element_in] = t.element_in_cost
-          })
+          .forEach((t) => { purchasePriceMap[t.element_in] = t.element_in_cost })
+
+        // Enrich picks with purchase + selling prices
+        // selling_price comes from picks data; purchase_price from transfers history
+        // For initial squad players with no transfer, fall back to selling_price
+        const enrichedPicks = picks.map((p) => ({
+          ...p,
+          purchase_price: purchasePriceMap[p.element] ?? p.selling_price ?? (parseFloat(pMap[p.element]?.price ?? 0) * 10),
+        }))
 
         // Chip fixture analysis
-        setGwAnalysis(buildGwAnalysis(picks, pMap, fixtures, gw))
+        setGwAnalysis(buildGwAnalysis(enrichedPicks, pMap, fixtures, gw))
 
         // Enrich picks with player data
-        const enriched = picks.slice(0, 15).map((p) => ({ ...p, player: pMap[p.element] }))
+        const enriched = enrichedPicks.slice(0, 15).map((p) => ({ ...p, player: pMap[p.element] }))
         setSquadPicks(enriched)
 
         // Squad value summary
-        const purchased = picks
+        const purchased = enrichedPicks
           .slice(0, 15)
-          .reduce((sum, p) => {
-            const purchasePrice = purchasePriceMap[p.element] 
-              ?? p.selling_price 
-              ?? (parseFloat(pMap[p.element]?.price) * 10)
-            return sum + (purchasePrice ?? 0) / 10
-          }, 0)
-        const current = picks
+          .reduce((sum, p) => sum + (p.purchase_price ?? 0) / 10, 0)
+        const current = enrichedPicks
           .slice(0, 15)
           .reduce((sum, p) => sum + parseFloat(pMap[p.element]?.price ?? 0), 0)
         setSquadValue({ current, purchased })
-        setPurchasePriceMap(purchasePriceMap)
 
         // Price tracker: filter out zero-minute players for relevance
         const active = players.filter((p) => p.minutes > 0)
@@ -456,18 +437,12 @@ export default function Strategy() {
     )
   }
 
-  // Group ALL used chip instances by name (for history badges)
+  // Group used chip instances by name
   const chipInstances = {}
   usedChips.forEach((c) => {
     if (!chipInstances[c.name]) chipInstances[c.name] = []
     chipInstances[c.name].push(c)
   })
-
-  // Half-season awareness: wildcard resets at GW19
-  const currentHalf = currentGw >= HALF_TWO_START_GW ? 2 : 1
-  const currentHalfUsed = usedChips.filter((c) =>
-    currentHalf === 2 ? c.event >= HALF_TWO_START_GW : c.event < HALF_TWO_START_GW
-  )
 
   const netGain = squadValue.current - squadValue.purchased
 
@@ -492,8 +467,7 @@ export default function Strategy() {
               key={key}
               chipKey={key}
               meta={meta}
-              usedInstances={currentHalfUsed.filter((c) => c.name === key)}
-              allInstances={chipInstances[key] || []}
+              usedInstances={chipInstances[key] || []}
               gwAnalysis={gwAnalysis}
             />
           ))}
@@ -598,7 +572,6 @@ export default function Strategy() {
                       pick={p}
                       player={p.player}
                       teamName={teamMap[p.player?.team_id] || '?'}
-                      purchasePriceMap={purchasePriceMap}
                     />
                   ))}
                 <tr>
@@ -617,7 +590,6 @@ export default function Strategy() {
                       pick={p}
                       player={p.player}
                       teamName={teamMap[p.player?.team_id] || '?'}
-                      purchasePriceMap={purchasePriceMap}
                     />
                   ))}
               </tbody>
