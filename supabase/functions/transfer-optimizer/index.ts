@@ -72,7 +72,7 @@ function calcXpts(
         homeBonus * 0.05 +
         minutesReliability * 0.05
 
-      xptts += gwScore * weight
+      xpts += gwScore * weight
     }
   }
   return Math.round(xpts * SCORE_TO_PTS * 10) / 10
@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
           id: c.id,
           name: c.player.web_name,
           team: c.player.team_id,
-          xps: c.xps,
+          xpts: c.xpts,
         })),
         chipAlerts,
       }),
