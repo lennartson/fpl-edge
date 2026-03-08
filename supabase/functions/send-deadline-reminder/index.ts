@@ -230,8 +230,8 @@ async function sendReminderEmail(
     const picks = picksData.picks || []
 
     // Fetch current budget/transfers
-    const budget = teamData.transfers_available ? teamData.bank / 10 : 0
-    const freeTransfers = teamData.transfers_available || 1
+    const freeTransfers = teamData.transfers?.limit ?? 1
+    const budget = (teamData.transfers?.bank ?? 0) / 10
 
     // Call transfer-optimizer with fallback (retry with service role key, graceful failure)
     let optimizerData = { captainPicks: [], topTransfers: [], chipAlerts: [] }
