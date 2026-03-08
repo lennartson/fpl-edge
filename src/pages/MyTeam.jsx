@@ -111,7 +111,7 @@ export default function MyTeam() {
         setTeamInfo({
           managerName: `${entry.player_first_name} ${entry.player_last_name}`,
           teamName: entry.name,
-          overallRank: entry.summary_overall_rank?.toLocaleString() ?? '—',
+          overallRank: entry.summary_overall_rank?.toLocaleString('en-GB') ?? '—',
           totalPoints: entry.summary_overall_points,
           gwPoints: picks.entry_history.points,
           bank: entry.last_deadline_bank / 10,
