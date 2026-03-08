@@ -109,6 +109,7 @@ function countByTeam(pickIds: number[], players: Player[]): Record<number, numbe
 }
 
 Deno.serve(async (req) => {
+  console.log('[transfer-optimizer] deployed at 2026-03-08T00:00:00Z')
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

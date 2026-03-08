@@ -335,6 +335,7 @@ async function checkDeadlineWindow(supabase: any): Promise<{ shouldSend: boolean
 }
 
 Deno.serve(async (req) => {
+  console.log('[send-deadline-reminder] deployed at 2026-03-08T00:00:00Z')
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

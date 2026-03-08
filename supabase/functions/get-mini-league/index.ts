@@ -12,6 +12,7 @@ const FPL_HEADERS = {
 }
 
 Deno.serve(async (req) => {
+  console.log('[get-mini-league] deployed at 2026-03-08T00:00:00Z')
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

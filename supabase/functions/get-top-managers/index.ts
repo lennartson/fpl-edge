@@ -15,6 +15,7 @@ const FPL_HEADERS = {
 const OVERALL_LEAGUE_ID = 314
 
 Deno.serve(async (req) => {
+  console.log('[get-top-managers] deployed at 2026-03-08T00:00:00Z')
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
