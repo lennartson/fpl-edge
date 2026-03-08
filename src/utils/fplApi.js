@@ -177,6 +177,16 @@ export async function getLiveGameweek(gameweek) {
 }
 
 export async function getTeamHistory(teamId) {
+  const { data: cached } = await supabase
+    .from('misc_cache')
+    .select('data, expires_at')
+    .eq('key', `team_history:${teamId}`)
+    .single()
+
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
+    return cached.data
+  }
+
   const res = await fetch(`${FUNCTIONS_URL}/get-team-history`, {
     method: 'POST',
     headers: authHeaders,
@@ -187,6 +197,16 @@ export async function getTeamHistory(teamId) {
 }
 
 export async function getEntryLeagues(teamId) {
+  const { data: cached } = await supabase
+    .from('misc_cache')
+    .select('data, expires_at')
+    .eq('key', `entry_leagues:${teamId}`)
+    .single()
+
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
+    return cached.data
+  }
+
   const res = await fetch(`${FUNCTIONS_URL}/get-entry-leagues`, {
     method: 'POST',
     headers: authHeaders,
