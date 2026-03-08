@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -25,6 +27,30 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const now = new Date()
+
+    // Check top_managers_cache for this gameweek
+    const { data: cached } = await supabase
+      .from('top_managers_cache')
+      .select('data, expires_at')
+      .eq('gameweek', gameweek)
+      .single()
+
+    if (cached?.expires_at && new Date(cached.expires_at) > now) {
+      console.log(`Cache hit for top managers GW${gameweek}, expires ${cached.expires_at}`)
+      return new Response(
+        JSON.stringify(cached.data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Cache miss for top managers GW${gameweek}, fetching from FPL API`)
 
     // Fetch the top managers from the overall league (page 1 = top 50 managers)
     const standingsRes = await fetch(
@@ -68,8 +94,28 @@ Deno.serve(async (req) => {
       }))
       .sort((a, b) => b.count - a.count)
 
+    const responseData = { topPlayers, sampleSize: successCount }
+
+    // TTL: next gameweek deadline, falling back to 1 hour
+    const { data: nextGw } = await supabase
+      .from('gameweeks')
+      .select('deadline_time')
+      .eq('is_next', true)
+      .single()
+
+    const expiresAt = nextGw?.deadline_time
+      ?? new Date(now.getTime() + 60 * 60 * 1000).toISOString()
+
+    const { error: cacheErr } = await supabase.from('top_managers_cache').upsert({
+      gameweek,
+      data: responseData,
+      cached_at: now.toISOString(),
+      expires_at: expiresAt,
+    })
+    if (cacheErr) console.warn(`top_managers_cache upsert failed: ${cacheErr.message}`)
+
     return new Response(
-      JSON.stringify({ topPlayers, sampleSize: successCount }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
