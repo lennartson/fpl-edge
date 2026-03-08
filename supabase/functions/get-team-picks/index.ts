@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
     if (!res.ok) throw new Error(`FPL API responded with ${res.status}`)
 
     const data = await res.json()
+    console.log('Sample pick fields:', JSON.stringify(data.picks?.[0]))
 
     // Determine expires_at: next gameweek deadline or 24h from now as fallback
     let expiresAt: string

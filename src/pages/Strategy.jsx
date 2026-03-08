@@ -286,6 +286,11 @@ function SquadValueRow({ pick, player, teamName, purchasePriceMap }) {
   const selling = (pick.selling_price ?? 0) / 10
   const current = parseFloat(player.price)
   const gain = selling - purchased
+  
+  // Debug logging
+  if (selling === 0) {
+    console.log('pick fields:', JSON.stringify(pick))
+  }
 
   return (
     <tr className="border-b border-cream-darker last:border-0 hover:bg-cream/40 transition-colors">
