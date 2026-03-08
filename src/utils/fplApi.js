@@ -196,6 +196,27 @@ export async function getTeamHistory(teamId) {
   return res.json()
 }
 
+export async function getTeamTransfers(teamId) {
+  // Check misc_cache first
+  const { data: cached } = await supabase
+    .from('misc_cache')
+    .select('data, expires_at')
+    .eq('key', `team_transfers:${teamId}`)
+    .single()
+
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
+    return cached.data
+  }
+
+  const res = await fetch(`${FUNCTIONS_URL}/get-team-transfers`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ teamId }),
+  })
+  if (!res.ok) throw new Error(`get-team-transfers failed: ${res.status}`)
+  return res.json()
+}
+
 export async function getEntryLeagues(teamId) {
   const { data: cached } = await supabase
     .from('misc_cache')

@@ -4,6 +4,7 @@ import {
   getCurrentGameweek,
   getTeamHistory,
   getTeamPicks,
+  getTeamTransfers,
   getPlayers,
   getTeams,
   getUpcomingFixtures,
@@ -276,9 +277,12 @@ function PricePlayerRow({ player, teamMap, direction }) {
 
 // ── Section 3: Squad Value Tracker ───────────────────────────────────────────
 
-function SquadValueRow({ pick, player, teamName }) {
+function SquadValueRow({ pick, player, teamName, purchasePriceMap }) {
   if (!player) return null
-  const purchased = (pick.purchase_price ?? 0) / 10
+  const purchasePrice = purchasePriceMap?.[pick.element] 
+    ?? pick.selling_price 
+    ?? (parseFloat(player.price) * 10)
+  const purchased = (purchasePrice ?? 0) / 10
   const selling = (pick.selling_price ?? 0) / 10
   const current = parseFloat(player.price)
   const gain = selling - purchased
@@ -331,6 +335,7 @@ export default function Strategy() {
   const [fallingPlayers, setFallingPlayers] = useState([])
   const [squadPicks, setSquadPicks] = useState([])
   const [squadValue, setSquadValue] = useState({ current: 0, purchased: 0 })
+  const [purchasePriceMap, setPurchasePriceMap] = useState({})
 
   useEffect(() => {
     const teamId = localStorage.getItem('fpl_team_id')
@@ -362,9 +367,22 @@ export default function Strategy() {
         teams.forEach((t) => { tMap[t.id] = t.short_name })
         setTeamMap(tMap)
 
-        // Step 2 — picks (needs current GW)
-        const picksData = await getTeamPicks(Number(teamId), gw)
+        // Step 2 — picks and transfers (needs current GW)
+        const [picksData, transfersData] = await Promise.all([
+          getTeamPicks(Number(teamId), gw),
+          getTeamTransfers(Number(teamId)),
+        ])
         const picks = picksData.picks || []
+        
+        // Build purchase price map from transfers history
+        const purchasePriceMap = {}
+        const transfers = transfersData || []
+        // Sort oldest first so latest transfer wins
+        transfers
+          .sort((a, b) => new Date(a.time) - new Date(b.time))
+          .forEach(t => {
+            purchasePriceMap[t.element_in] = t.element_in_cost
+          })
 
         // Chip fixture analysis
         setGwAnalysis(buildGwAnalysis(picks, pMap, fixtures, gw))
@@ -376,11 +394,17 @@ export default function Strategy() {
         // Squad value summary
         const purchased = picks
           .slice(0, 15)
-          .reduce((sum, p) => sum + (p.purchase_price ?? 0) / 10, 0)
+          .reduce((sum, p) => {
+            const purchasePrice = purchasePriceMap[p.element] 
+              ?? p.selling_price 
+              ?? (parseFloat(pMap[p.element]?.price) * 10)
+            return sum + (purchasePrice ?? 0) / 10
+          }, 0)
         const current = picks
           .slice(0, 15)
           .reduce((sum, p) => sum + parseFloat(pMap[p.element]?.price ?? 0), 0)
         setSquadValue({ current, purchased })
+        setPurchasePriceMap(purchasePriceMap)
 
         // Price tracker: filter out zero-minute players for relevance
         const active = players.filter((p) => p.minutes > 0)
@@ -564,6 +588,7 @@ export default function Strategy() {
                       pick={p}
                       player={p.player}
                       teamName={teamMap[p.player?.team_id] || '?'}
+                      purchasePriceMap={purchasePriceMap}
                     />
                   ))}
                 <tr>
@@ -582,6 +607,7 @@ export default function Strategy() {
                       pick={p}
                       player={p.player}
                       teamName={teamMap[p.player?.team_id] || '?'}
+                      purchasePriceMap={purchasePriceMap}
                     />
                   ))}
               </tbody>
