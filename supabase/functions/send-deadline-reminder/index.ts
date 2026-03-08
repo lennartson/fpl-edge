@@ -101,7 +101,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${captain.name}</div>
-            <div class="pick-meta">${teamMap?.[captain.team] || teamMap?.[String(captain.team)] || 'Unknown'} • xPS: ${captain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[String(captain.team)] || 'Unknown Club'} • xPS: ${captain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps">${captain.xps.toFixed(1)}</div>
@@ -115,7 +115,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${viceCaptain.name}</div>
-            <div class="pick-meta">${teamMap?.[viceCaptain.team] || teamMap?.[String(viceCaptain.team)] || 'Unknown'} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[String(viceCaptain.team)] || 'Unknown Club'} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps" style="color: #e8603c;">${viceCaptain.xps.toFixed(1)}</div>
@@ -254,15 +254,16 @@ async function sendReminderEmail(
       console.warn(`transfer-optimizer call failed: ${err}, using fallback data`)
     }
 
-    // Fetch all teams to build teamId → name mapping
+    // Fetch all teams to build teamId → name mapping (string keys to avoid type coercion issues)
     const { data: teams, error: teamsErr } = await supabase.from('teams').select('id, short_name')
-    const teamMap: Record<number, string> = {}
-    if (!teamsErr && teams && teams.length > 0) {
-      teams.forEach((t: any) => { teamMap[t.id] = t.short_name })
+    const teamMap: Record<string, string> = {}
+    if (!teamsErr && teams) {
+      teams.forEach((t: any) => { teamMap[String(t.id)] = t.short_name })
     }
 
     // Generate email HTML
-    console.log('teamMap:', JSON.stringify(teamMap))
+    console.log('teamMap keys:', Object.keys(teamMap).slice(0, 5))
+    console.log('captain.team:', optimizerData.captainPicks?.[0]?.team, typeof optimizerData.captainPicks?.[0]?.team)
     const emailHtml = generateEmailHtml({
       currentGw,
       footballerName,

@@ -11,12 +11,14 @@ import {
 
 const POSITION_LABELS = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' }
 
-// FPL allows 2 wildcards per season, 1 of everything else
+// FPL 2025/26: one wildcard per half, one of everything else per season
+const HALF_TWO_START_GW = 19
+
 const CHIP_META = {
   wildcard: {
     label: 'Wildcard',
     icon: '🃏',
-    maxUses: 2,
+    maxUses: 1,
     description:
       'Make unlimited free transfers for one gameweek — your squad stays the same afterwards.',
   },
@@ -166,7 +168,9 @@ function getChipRecommendation(chipKey, gwAnalysis) {
   }
 }
 
-function ChipCard({ chipKey, meta, usedInstances, gwAnalysis }) {
+function ChipCard({ chipKey, meta, usedInstances, allInstances, gwAnalysis }) {
+  // usedInstances = current-half uses only (determines availability)
+  // allInstances  = all-time uses (shown in history badges)
   const usedCount = usedInstances.length
   const available = usedCount < meta.maxUses
   const remaining = meta.maxUses - usedCount
@@ -186,13 +190,9 @@ function ChipCard({ chipKey, meta, usedInstances, gwAnalysis }) {
             <p className="font-bold text-charcoal leading-tight">{meta.label}</p>
             {chipKey === 'wildcard' ? (
               <p className="text-xs text-charcoal/40">
-                {remaining} of 2 remaining this season
+                {remaining} of 1 remaining this half
               </p>
-            ) : meta.maxUses > 1 && (
-              <p className="text-xs text-charcoal/40">
-                {remaining} of {meta.maxUses} remaining
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
         {available ? (
@@ -209,10 +209,10 @@ function ChipCard({ chipKey, meta, usedInstances, gwAnalysis }) {
       {/* Description */}
       <p className="text-sm text-charcoal/60 leading-snug">{meta.description}</p>
 
-      {/* Usage history badges */}
-      {usedInstances.length > 0 && (
+      {/* Usage history badges — show all-time uses for context */}
+      {allInstances.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {usedInstances.map((u, i) => (
+          {allInstances.map((u, i) => (
             <span
               key={i}
               className="text-xs text-charcoal/50 bg-cream-darker px-2 py-0.5 rounded-full"
@@ -422,12 +422,18 @@ export default function Strategy() {
     )
   }
 
-  // Group used chip instances by name
+  // Group ALL used chip instances by name (for history badges)
   const chipInstances = {}
   usedChips.forEach((c) => {
     if (!chipInstances[c.name]) chipInstances[c.name] = []
     chipInstances[c.name].push(c)
   })
+
+  // Half-season awareness: wildcard resets at GW19
+  const currentHalf = currentGw >= HALF_TWO_START_GW ? 2 : 1
+  const currentHalfUsed = usedChips.filter((c) =>
+    currentHalf === 2 ? c.event >= HALF_TWO_START_GW : c.event < HALF_TWO_START_GW
+  )
 
   const netGain = squadValue.current - squadValue.purchased
 
@@ -452,7 +458,8 @@ export default function Strategy() {
               key={key}
               chipKey={key}
               meta={meta}
-              usedInstances={chipInstances[key] || []}
+              usedInstances={currentHalfUsed.filter((c) => c.name === key)}
+              allInstances={chipInstances[key] || []}
               gwAnalysis={gwAnalysis}
             />
           ))}
