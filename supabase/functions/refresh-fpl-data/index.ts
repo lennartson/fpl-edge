@@ -16,6 +16,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL') || '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     )
+
+    // Check cache_metadata — skip FPL fetch if bootstrap_static is still fresh
+    const { data: cacheMeta } = await supabase
+      .from('cache_metadata')
+      .select('expires_at')
+      .eq('key', 'bootstrap_static')
+      .single()
+
+    const now = new Date()
+    if (cacheMeta?.expires_at && new Date(cacheMeta.expires_at) > now) {
+      console.log(`bootstrap_static cache is fresh until ${cacheMeta.expires_at}, skipping FPL fetch`)
+      return new Response(
+        JSON.stringify({ success: true, cached: true, expires_at: cacheMeta.expires_at }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Cache stale or missing, fetching from FPL API')
+
     const fplHeaders = {
       'User-Agent': 'Mozilla/5.0 (compatible; FPLEdge/1.0)',
       'Accept': 'application/json',
@@ -89,9 +108,20 @@ Deno.serve(async (req) => {
     const { error: fixErr } = await supabase.from('fixtures').upsert(fixtures)
     if (fixErr) throw new Error(`Fixtures upsert: ${fixErr.message}`)
 
+    // Update cache_metadata: bootstrap_static expires in 24 hours
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
+    const { error: cacheErr } = await supabase.from('cache_metadata').upsert({
+      key: 'bootstrap_static',
+      last_updated: now.toISOString(),
+      expires_at: expiresAt,
+    })
+    if (cacheErr) console.warn(`cache_metadata upsert failed: ${cacheErr.message}`)
+
     return new Response(
       JSON.stringify({
         success: true,
+        cached: false,
+        expires_at: expiresAt,
         counts: {
           teams: teams.length,
           players: players.length,

@@ -95,14 +95,25 @@ export async function getTeam(teamId) {
 }
 
 export async function getBootstrapStatic() {
-  // Ensure Supabase data is fresh
-  const refreshRes = await fetch(`${FUNCTIONS_URL}/refresh-fpl-data`, {
-    method: 'POST',
-    headers: authHeaders,
-  })
-  if (!refreshRes.ok) throw new Error(`refresh-fpl-data failed: ${refreshRes.status}`)
+  // Check cache_metadata — if bootstrap_static is still fresh, skip the edge function call
+  const { data: cacheMeta } = await supabase
+    .from('cache_metadata')
+    .select('expires_at')
+    .eq('key', 'bootstrap_static')
+    .single()
 
-  // Query all three tables in parallel
+  const isStale = !cacheMeta?.expires_at || new Date(cacheMeta.expires_at) <= new Date()
+
+  if (isStale) {
+    // Trigger a refresh so Supabase tables are up to date
+    const refreshRes = await fetch(`${FUNCTIONS_URL}/refresh-fpl-data`, {
+      method: 'POST',
+      headers: authHeaders,
+    })
+    if (!refreshRes.ok) throw new Error(`refresh-fpl-data failed: ${refreshRes.status}`)
+  }
+
+  // Query all three tables in parallel directly from Supabase
   const [playersResult, teamsResult, gameweeksResult] = await Promise.all([
     supabase.from('players').select('*'),
     supabase.from('teams').select('*').order('id'),
@@ -121,6 +132,23 @@ export async function getBootstrapStatic() {
 }
 
 export async function getTeamPicks(teamId, gameweek) {
+  // Check team_picks_cache first — avoids hitting FPL API on every page load
+  const { data: cached } = await supabase
+    .from('team_picks_cache')
+    .select('picks, expires_at, gameweek')
+    .eq('team_id', teamId)
+    .single()
+
+  if (
+    cached &&
+    cached.gameweek === gameweek &&
+    cached.expires_at &&
+    new Date(cached.expires_at) > new Date()
+  ) {
+    return cached.picks
+  }
+
+  // Cache miss — call edge function (which will also populate the cache)
   const res = await fetch(`${FUNCTIONS_URL}/get-team-picks`, {
     method: 'POST',
     headers: authHeaders,
