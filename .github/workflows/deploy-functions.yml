@@ -21,14 +21,10 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy edge functions
+      - name: Deploy Supabase Edge Functions
         run: |
-          supabase functions deploy get-team --project-ref $PROJECT_REF
-          supabase functions deploy get-team-picks --project-ref $PROJECT_REF
-          supabase functions deploy refresh-fpl-data --project-ref $PROJECT_REF
-          supabase functions deploy transfer-optimizer --project-ref $PROJECT_REF
-          supabase functions deploy get-live-gameweek --project-ref $PROJECT_REF
-          supabase functions deploy get-team-history --project-ref $PROJECT_REF
-          supabase functions deploy get-entry-leagues --project-ref $PROJECT_REF
-          supabase functions deploy get-mini-league --project-ref $PROJECT_REF
-          supabase functions deploy get-top-managers --project-ref $PROJECT_REF
+          for dir in supabase/functions/*/; do
+            func=$(basename "$dir")
+            echo "Deploying $func..."
+            supabase functions deploy "$func" --project-ref $PROJECT_REF
+          done
