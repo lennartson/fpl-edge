@@ -132,19 +132,15 @@ export async function getBootstrapStatic() {
 }
 
 export async function getTeamPicks(teamId, gameweek) {
-  // Check team_picks_cache first — avoids hitting FPL API on every page load
+  // Check team_picks_cache first — composite PK (team_id, gameweek)
   const { data: cached } = await supabase
     .from('team_picks_cache')
-    .select('picks, expires_at, gameweek')
+    .select('picks, expires_at')
     .eq('team_id', teamId)
+    .eq('gameweek', gameweek)
     .single()
 
-  if (
-    cached &&
-    cached.gameweek === gameweek &&
-    cached.expires_at &&
-    new Date(cached.expires_at) > new Date()
-  ) {
+  if (cached?.expires_at && new Date(cached.expires_at) > new Date()) {
     return cached.picks
   }
 

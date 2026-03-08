@@ -25,20 +25,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Check team_picks_cache for a fresh hit
+    // Check team_picks_cache for a fresh hit (composite PK: team_id + gameweek)
     const now = new Date()
     const { data: cached } = await supabase
       .from('team_picks_cache')
-      .select('picks, expires_at, gameweek')
+      .select('picks, expires_at')
       .eq('team_id', teamId)
+      .eq('gameweek', gameweek)
       .single()
 
-    if (
-      cached &&
-      cached.gameweek === gameweek &&
-      cached.expires_at &&
-      new Date(cached.expires_at) > now
-    ) {
+    if (cached?.expires_at && new Date(cached.expires_at) > now) {
       console.log(`Cache hit for team ${teamId} GW${gameweek}, expires ${cached.expires_at}`)
       return new Response(
         JSON.stringify(cached.picks),
