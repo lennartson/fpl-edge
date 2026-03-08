@@ -117,8 +117,8 @@ function CaptainCard({ pick, rank, playerMap, teamMap, fixtureMap, currentGw }) 
           <p className="text-charcoal/50 text-sm">{teamName}</p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-2xl font-bold text-forest">{pick.xps.toFixed(1)}</p>
-          <p className="text-xs text-charcoal/40">xPS</p>
+          <p className="text-2xl font-bold text-forest">{pick.xpts.toFixed(1)}</p>
+          <p className="text-xs text-charcoal/40">xPts</p>
         </div>
       </div>
 
@@ -313,7 +313,7 @@ function TransferCard({ combo }) {
         </div>
         <div className="text-right shrink-0">
           <p className="text-xl font-bold text-forest">+{combo.netGain}</p>
-          <p className="text-xs text-charcoal/40">net xPS gain</p>
+          <p className="text-xs text-charcoal/40">net xPts gain</p>
         </div>
       </div>
 
@@ -324,7 +324,7 @@ function TransferCard({ combo }) {
             <div key={p.id} className="mb-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-charcoal">{p.name}</p>
-                <span className="text-xs font-bold text-coral ml-2">{p.xps} xPS</span>
+                <span className="text-xs font-bold text-coral ml-2">{p.xpts} xPts</span>
               </div>
               <p className="text-xs text-charcoal/40">{p.reason || 'Not available'}</p>
             </div>
@@ -336,9 +336,9 @@ function TransferCard({ combo }) {
             <div key={p.id} className="mb-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-charcoal">{p.name}</p>
-                <span className="text-xs font-bold text-forest ml-2">{p.xps} xPS</span>
+                <span className="text-xs font-bold text-forest ml-2">{p.xpts} xPts</span>
               </div>
-              <p className="text-xs text-charcoal/40">+{combo.xpsGain.toFixed(1)} xPS over 3 GWs</p>
+              <p className="text-xs text-charcoal/40">+{combo.xptsGain.toFixed(1)} xPts over 3 GWs</p>
             </div>
           ))}
         </div>
@@ -525,7 +525,7 @@ export default function GameweekIntel() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-charcoal">📊 Gameweek Intel</h1>
         <p className="text-charcoal/50 text-sm mt-0.5">
-          GW{currentGw} · Actionable recommendations based on live xPS data
+          GW{currentGw} · Actionable recommendations based on live xPts data
         </p>
       </div>
 

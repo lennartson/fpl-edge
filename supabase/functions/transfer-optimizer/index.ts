@@ -8,6 +8,7 @@ const corsHeaders = {
 
 // Decay weights for GW+1 through GW+8
 const GW_WEIGHTS = [1.0, 0.8, 0.6, 0.4, 0.25, 0.15, 0.08, 0.04]
+const SCORE_TO_PTS = 1.2
 
 interface Player {
   id: number
@@ -39,12 +40,12 @@ interface Pick {
   is_vice_captain: boolean
 }
 
-function calcXps(
+function calcXpts(
   player: Player,
   fixtures: Fixture[],
   currentGw: number
 ): number {
-  let xps = 0
+  let xpts = 0
   // Normalise inputs to 0-10 scale
   const formNorm = Math.min(player.form / 15, 1) * 10
   const ictNorm = Math.min(player.ict_index / 300, 1) * 10
@@ -71,13 +72,13 @@ function calcXps(
         homeBonus * 0.05 +
         minutesReliability * 0.05
 
-      xps += gwScore * weight
+      xptts += gwScore * weight
     }
   }
-  return Math.round(xps * 10) / 10
+  return Math.round(xpts * SCORE_TO_PTS * 10) / 10
 }
 
-function calcGw1Score(player: Player, fixtures: Fixture[], currentGw: number): number {
+function calcGw1Xpts(player: Player, fixtures: Fixture[], currentGw: number): number {
   const formNorm = Math.min(player.form / 15, 1) * 10
   const ictNorm = Math.min(player.ict_index / 300, 1) * 10
   const minutesReliability = Math.min(player.minutes / (90 * 19), 1)
@@ -95,7 +96,7 @@ function calcGw1Score(player: Player, fixtures: Fixture[], currentGw: number): n
     const homeBonus = isHome ? 1 : 0
     score += formNorm * 0.40 + ictNorm * 0.25 + fdrNorm * 0.25 + homeBonus * 0.05 + minutesReliability * 0.05
   }
-  return Math.round(score * 10) / 10
+  return Math.round(score * SCORE_TO_PTS * 10) / 10
 }
 
 function countByTeam(pickIds: number[], players: Player[]): Record<number, number> {
@@ -152,32 +153,32 @@ Deno.serve(async (req) => {
 
     const playerMap = new Map(players.map((p) => [p.id, p]))
 
-    // Score each player's xPS
-    const xpsMap = new Map<number, number>()
-    const gw1ScoreMap = new Map<number, number>()
+    // Score each player's xPts
+    const xptsMap = new Map<number, number>()
+    const gw1XptsMap = new Map<number, number>()
     for (const p of players) {
-      xpsMap.set(p.id, calcXps(p, fixtures, currentGw))
-      gw1ScoreMap.set(p.id, calcGw1Score(p, fixtures, currentGw))
+      xptsMap.set(p.id, calcXpts(p, fixtures, currentGw))
+      gw1XptsMap.set(p.id, calcGw1Xpts(p, fixtures, currentGw))
     }
 
     // Current squad pick IDs (starters + bench, first 15)
     const currentPickIds = picks.map((p) => p.element)
-    const currentSquadXps = currentPickIds.reduce((sum, id) => sum + (xpsMap.get(id) ?? 0), 0)
+    const currentSquadXpts = currentPickIds.reduce((sum, id) => sum + (xptsMap.get(id) ?? 0), 0)
 
     // Rank GW+1 captain picks using GW1 score
     const starterPicks = picks.filter((p) => p.position <= 11)
     const captainOptions = starterPicks
-      .map((p) => ({ id: p.element, player: playerMap.get(p.element)!, xps: gw1ScoreMap.get(p.element) ?? 0 }))
+      .map((p) => ({ id: p.element, player: playerMap.get(p.element)!, xpts: gw1XptsMap.get(p.element) ?? 0 }))
       .filter((x) => x.player)
-      .sort((a, b) => b.xps - a.xps)
+      .sort((a, b) => b.xpts - a.xpts)
       .slice(0, 3)
 
     // Build transfer candidates: players NOT in squad, grouped by position
     const squadSet = new Set(currentPickIds)
     const candidates = players
       .filter((p) => !squadSet.has(p.id))
-      .map((p) => ({ ...p, xps: xpsMap.get(p.id) ?? 0 }))
-      .sort((a, b) => b.xps - a.xps)
+      .map((p) => ({ ...p, xpts: xptsMap.get(p.id) ?? 0 }))
+      .sort((a, b) => b.xpts - a.xpts)
 
     const transferCombinations: any[] = []
 
@@ -220,22 +221,22 @@ Deno.serve(async (req) => {
     for (const pick of picks.slice(0, 15)) {
       const outPlayer = playerMap.get(pick.element)
       if (!outPlayer) continue
-      const outXps = xpsMap.get(pick.element) ?? 0
+      const outXpts = xptsMap.get(pick.element) ?? 0
       const samePosCandidates = candidates.filter((c) => c.position === outPlayer.position).slice(0, 20)
 
       for (const candidate of samePosCandidates) {
         const { valid, costDelta } = isValidSwap([pick.element], [candidate.id])
         if (!valid) continue
-        const xpsGain = candidate.xps - outXps
+        const xptsGain = candidate.xpts - outXpts
         const transferCost = freeTransfers >= 1 ? 0 : 4
-        const netGain = xpsGain - transferCost
+        const netGain = xptsGain - transferCost
         if (netGain > 0) {
           const reason = getTransferReason(outPlayer, candidate, fixtures)
           transferCombinations.push({
             transfers: 1,
-            out: [{ id: pick.element, name: outPlayer.web_name, xps: Math.round(outXps * 10) / 10, reason }],
-            in: [{ id: candidate.id, name: candidate.web_name, xps: candidate.xps }],
-            xpsGain: Math.round(xpsGain * 10) / 10,
+            out: [{ id: pick.element, name: outPlayer.web_name, xpts: Math.round(outXpts * 10) / 10, reason }],
+            in: [{ id: candidate.id, name: candidate.web_name, xpts: Math.round((gw1XptsMap.get(candidate.id) ?? 0) * 10) / 10 }],
+            xptsGain: Math.round(xptsGain * 10) / 10,
             transferCost,
             netGain: Math.round(netGain * 10) / 10,
             costDelta: Math.round(costDelta * 10) / 10,
@@ -253,8 +254,8 @@ Deno.serve(async (req) => {
         const out1 = playerMap.get(pickArray[i].element)
         const out2 = playerMap.get(pickArray[j].element)
         if (!out1 || !out2) continue
-        const out1Xps = xpsMap.get(pickArray[i].element) ?? 0
-        const out2Xps = xpsMap.get(pickArray[j].element) ?? 0
+        const out1Xpts = xptsMap.get(pickArray[i].element) ?? 0
+        const out2Xpts = xptsMap.get(pickArray[j].element) ?? 0
 
         const pos1Candidates = top2Candidates.filter((c) => c.position === out1.position)
         const pos2Candidates = top2Candidates.filter((c) => c.position === out2.position)
@@ -267,7 +268,7 @@ Deno.serve(async (req) => {
               [c1.id, c2.id]
             )
             if (!valid) continue
-            const xpsGain = (c1.xps - out1Xps) + (c2.xps - out2Xps)
+            const xptsGain = (c1.xpts - out1Xpts) + (c2.xpts - out2Xpts)
             const freeUsed = Math.min(freeTransfers, 2)
             const hits = 2 - freeUsed
             const transferCost = hits * 4
@@ -279,14 +280,14 @@ Deno.serve(async (req) => {
               transferCombinations.push({
                 transfers: 2,
                 out: [
-                  { id: pickArray[i].element, name: out1.web_name, xps: Math.round(out1Xps * 10) / 10, reason: reason1 },
-                  { id: pickArray[j].element, name: out2.web_name, xps: Math.round(out2Xps * 10) / 10, reason: reason2 },
+                  { id: pickArray[i].element, name: out1.web_name, xpts: Math.round(out1Xpts * 10) / 10, reason: reason1 },
+                  { id: pickArray[j].element, name: out2.web_name, xpts: Math.round(out2Xpts * 10) / 10, reason: reason2 },
                 ],
                 in: [
-                  { id: c1.id, name: c1.web_name, xps: c1.xps },
-                  { id: c2.id, name: c2.web_name, xps: c2.xps },
+                  { id: c1.id, name: c1.web_name, xpts: Math.round((gw1XptsMap.get(c1.id) ?? 0) * 10) / 10 },
+                  { id: c2.id, name: c2.web_name, xpts: Math.round((gw1XptsMap.get(c2.id) ?? 0) * 10) / 10 },
                 ],
-                xpsGain: Math.round(xpsGain * 10) / 10,
+                xptsGain: Math.round(xptsGain * 10) / 10,
                 transferCost,
                 netGain: Math.round(netGain * 10) / 10,
                 costDelta: Math.round(costDelta * 10) / 10,
@@ -306,7 +307,7 @@ Deno.serve(async (req) => {
         transfers: 0,
         out: [],
         in: [],
-        xpsGain: 1.5,
+        xptsGain: 1.5,
         transferCost: 0,
         netGain: 1.5,
         costDelta: 0,
@@ -319,19 +320,19 @@ Deno.serve(async (req) => {
 
     // Chip recommendations based on squad analysis
     const chipAlerts: string[] = []
-    const squadXpsPerPlayer = currentSquadXps / currentPickIds.length
-    const benchXps = picks
+    const squadXptsPerPlayer = currentSquadXpts / currentPickIds.length
+    const benchXpts = picks
       .filter((p) => p.position > 11)
-      .reduce((sum, p) => sum + (xpsMap.get(p.element) ?? 0), 0)
-    const starterXps = picks
+      .reduce((sum, p) => sum + (xptsMap.get(p.element) ?? 0), 0)
+    const starterXpts = picks
       .filter((p) => p.position <= 11)
-      .reduce((sum, p) => sum + (xpsMap.get(p.element) ?? 0), 0)
+      .reduce((sum, p) => sum + (xptsMap.get(p.element) ?? 0), 0)
 
-    if (benchXps / 4 > (starterXps / 11) * 1.2) {
-      chipAlerts.push('BENCH_BOOST: Your bench is exceptionally strong (120%+ of starter average xPS) — Bench Boost could deliver significant value.')
+    if (benchXpts / 4 > (starterXpts / 11) * 1.2) {
+      chipAlerts.push('BENCH_BOOST: Your bench is exceptionally strong (120%+ of starter average xPts) — Bench Boost could deliver significant value.')
     }
-    if (captainOptions.length > 0 && captainOptions[0].xps > squadXpsPerPlayer * 2.5) {
-      chipAlerts.push('TRIPLE_CAPTAIN: Top captain pick has exceptional xPS — Triple Captain could be high value.')
+    if (captainOptions.length > 0 && captainOptions[0].xpts > squadXptsPerPlayer * 2.5) {
+      chipAlerts.push('TRIPLE_CAPTAIN: Top captain pick has exceptional xPts — Triple Captain could be high value.')
     }
     if (freeTransfers >= 2 && top3.length > 0 && top3[0].netGain > 20) {
       chipAlerts.push('FREE_HIT: Large squad upgrade potential detected — Free Hit may maximise this gameweek.')
@@ -343,7 +344,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         currentGw,
-        currentSquadXps: Math.round(currentSquadXps * 10) / 10,
+        currentSquadXpts: Math.round(currentSquadXpts * 10) / 10,
         topTransfers: top3,
         captainPicks: captainOptions.map((c) => ({
           id: c.id,
