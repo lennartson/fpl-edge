@@ -364,8 +364,7 @@ export default function Strategy() {
           getTeamPicks(Number(teamId), gw),
           getTeamTransfers(Number(teamId)),
         ])
-        console.log('DEBUG raw picksData:', picksData)
-        const picks = picksData.picks || picksData || []
+        const picks = picksData.picks || []
 
         // Build purchase price map from transfers history (most recent transfer IN wins)
         const purchasePriceMap = {}
@@ -375,11 +374,13 @@ export default function Strategy() {
           .forEach((t) => { purchasePriceMap[t.element_in] = t.element_in_cost })
 
         // Enrich picks with purchase + selling prices
-        // selling_price comes from picks data; purchase_price from transfers history
-        // For initial squad players with no transfer, fall back to selling_price
+        // FPL API doesn't return selling_price in picks, so we use current market price
+        // purchase_price comes from transfers history or current price as fallback
+        // selling_price is current market price (what they'd sell for now)
         const enrichedPicks = picks.map((p) => ({
           ...p,
-          purchase_price: purchasePriceMap[p.element] ?? p.selling_price ?? (parseFloat(pMap[p.element]?.price ?? 0) * 10),
+          purchase_price: purchasePriceMap[p.element] ?? (parseFloat(pMap[p.element]?.price ?? 0) * 10),
+          selling_price: parseFloat(pMap[p.element]?.price ?? 0) * 10,
         }))
 
         // Chip fixture analysis
