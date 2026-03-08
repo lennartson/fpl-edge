@@ -184,7 +184,11 @@ function ChipCard({ chipKey, meta, usedInstances, gwAnalysis }) {
           <span className="text-2xl">{meta.icon}</span>
           <div>
             <p className="font-bold text-charcoal leading-tight">{meta.label}</p>
-            {meta.maxUses > 1 && (
+            {chipKey === 'wildcard' ? (
+              <p className="text-xs text-charcoal/40">
+                {remaining} of 2 remaining this season
+              </p>
+            ) : meta.maxUses > 1 && (
               <p className="text-xs text-charcoal/40">
                 {remaining} of {meta.maxUses} remaining
               </p>

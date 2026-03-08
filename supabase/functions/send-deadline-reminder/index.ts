@@ -101,7 +101,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${captain.name}</div>
-            <div class="pick-meta">${teamMap?.[captain.team] || `Team ${captain.team}`} • xPS: ${captain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[captain.team] || teamMap?.[String(captain.team)] || 'Unknown'} • xPS: ${captain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps">${captain.xps.toFixed(1)}</div>
@@ -115,7 +115,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${viceCaptain.name}</div>
-            <div class="pick-meta">${teamMap?.[viceCaptain.team] || `Team ${viceCaptain.team}`} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[viceCaptain.team] || teamMap?.[String(viceCaptain.team)] || 'Unknown'} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps" style="color: #e8603c;">${viceCaptain.xps.toFixed(1)}</div>
@@ -262,6 +262,7 @@ async function sendReminderEmail(
     }
 
     // Generate email HTML
+    console.log('teamMap:', JSON.stringify(teamMap))
     const emailHtml = generateEmailHtml({
       currentGw,
       footballerName,
