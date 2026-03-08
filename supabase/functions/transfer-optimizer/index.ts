@@ -272,8 +272,8 @@ Deno.serve(async (req) => {
             const freeUsed = Math.min(freeTransfers, 2)
             const hits = 2 - freeUsed
             const transferCost = hits * 4
-            if (hits > 0 && xpsGain < transferCost + 2) continue // only take hit if clearly worth it
-            const netGain = xpsGain - transferCost
+            if (hits > 0 && xptsGain < transferCost + 2) continue // only take hit if clearly worth it
+            const netGain = xptsGain - transferCost
             if (netGain > 0) {
               const reason1 = getTransferReason(out1, c1, fixtures)
               const reason2 = getTransferReason(out2, c2, fixtures)
