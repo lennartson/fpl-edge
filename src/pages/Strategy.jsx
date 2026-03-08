@@ -287,10 +287,8 @@ function SquadValueRow({ pick, player, teamName, purchasePriceMap }) {
   const current = parseFloat(player.price)
   const gain = selling - purchased
   
-  // Debug logging
-  if (selling === 0) {
-    console.log('pick fields:', JSON.stringify(pick))
-  }
+  // Debug logging - always log to see pick structure
+  console.log('DEBUG SquadValueRow pick:', { element: pick.element, selling_price: pick.selling_price, has_all_fields: Object.keys(pick).length })
 
   return (
     <tr className="border-b border-cream-darker last:border-0 hover:bg-cream/40 transition-colors">
