@@ -101,7 +101,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${captain.name}</div>
-            <div class="pick-meta">${teamMap?.[String(captain.team)] || 'Unknown Club'} • xPS: ${captain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[String(captain.team)] ?? teamMap?.[Number(captain.team)] ?? `Unknown (Team ${captain.team})`} • xPS: ${captain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps">${captain.xps.toFixed(1)}</div>
@@ -115,7 +115,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${viceCaptain.name}</div>
-            <div class="pick-meta">${teamMap?.[String(viceCaptain.team)] || 'Unknown Club'} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap?.[String(viceCaptain.team)] ?? teamMap?.[Number(viceCaptain.team)] ?? `Unknown (Team ${viceCaptain.team})`} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps" style="color: #e8603c;">${viceCaptain.xps.toFixed(1)}</div>
@@ -262,8 +262,8 @@ async function sendReminderEmail(
     }
 
     // Generate email HTML
-    console.log('teamMap keys:', Object.keys(teamMap).slice(0, 5))
-    console.log('captain.team:', optimizerData.captainPicks?.[0]?.team, typeof optimizerData.captainPicks?.[0]?.team)
+    const captain = optimizerData.captainPicks?.[0]
+    console.log('DEBUG teamMap:', JSON.stringify(teamMap), 'captain.team:', captain?.team, typeof captain?.team)
     const emailHtml = generateEmailHtml({
       currentGw,
       footballerName,
