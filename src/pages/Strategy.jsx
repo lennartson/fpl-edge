@@ -375,7 +375,14 @@ export default function Strategy() {
           getTeamPicks(Number(teamId), gw),
           getTeamTransfers(Number(teamId)),
         ])
-        const picks = picksData.picks || []
+        console.log('DEBUG picksData structure:', { 
+          has_picks_property: 'picks' in picksData, 
+          is_array: Array.isArray(picksData),
+          typeof: typeof picksData,
+          keys: Object.keys(picksData).slice(0, 10),
+          first_element: picksData[0] || picksData.picks?.[0]
+        })
+        const picks = picksData.picks || picksData
         
         // Build purchase price map from transfers history
         const purchasePriceMap = {}
