@@ -338,7 +338,7 @@ function TransferCard({ combo }) {
                 <p className="text-sm font-semibold text-charcoal">{p.name}</p>
                 <span className="text-xs font-bold text-forest ml-2">{p.xpts} xPts</span>
               </div>
-              <p className="text-xs text-charcoal/40">+{combo.xptsGain.toFixed(1)} xPts over 3 GWs</p>
+              <p className="text-xs text-charcoal/40">GW+1 projection</p>
             </div>
           ))}
         </div>

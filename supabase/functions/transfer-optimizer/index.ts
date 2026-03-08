@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
           const reason = getTransferReason(outPlayer, candidate, fixtures)
           transferCombinations.push({
             transfers: 1,
-            out: [{ id: pick.element, name: outPlayer.web_name, xpts: Math.round(outXpts * 10) / 10, reason }],
+            out: [{ id: pick.element, name: outPlayer.web_name, xpts: Math.round((gw1XptsMap.get(pick.element) ?? 0) * 10) / 10, reason }],
             in: [{ id: candidate.id, name: candidate.web_name, xpts: Math.round((gw1XptsMap.get(candidate.id) ?? 0) * 10) / 10 }],
             xptsGain: Math.round(xptsGain * 10) / 10,
             transferCost,
@@ -280,8 +280,8 @@ Deno.serve(async (req) => {
               transferCombinations.push({
                 transfers: 2,
                 out: [
-                  { id: pickArray[i].element, name: out1.web_name, xpts: Math.round(out1Xpts * 10) / 10, reason: reason1 },
-                  { id: pickArray[j].element, name: out2.web_name, xpts: Math.round(out2Xpts * 10) / 10, reason: reason2 },
+                  { id: pickArray[i].element, name: out1.web_name, xpts: Math.round((gw1XptsMap.get(pickArray[i].element) ?? 0) * 10) / 10, reason: reason1 },
+                  { id: pickArray[j].element, name: out2.web_name, xpts: Math.round((gw1XptsMap.get(pickArray[j].element) ?? 0) * 10) / 10, reason: reason2 },
                 ],
                 in: [
                   { id: c1.id, name: c1.web_name, xpts: Math.round((gw1XptsMap.get(c1.id) ?? 0) * 10) / 10 },
