@@ -21,14 +21,13 @@ function generateEmailHtml(data: any): string {
     captainPicks,
     topTransfers,
     chipAlerts,
-    teamMap,
+    teamMap = {},
   } = data
 
   const captain = captainPicks?.[0]
   const viceCaptain = captainPicks?.[1]
   const topTransfer = topTransfers?.[0]
 
-  // Deadline is typically Saturday 11:00 GMT for GW gameweek (based on FPL schedule)
   const deadlineTime = 'Saturday 11:00 GMT'
 
   return `
@@ -49,7 +48,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
 .deadline-box { background-color: #f5f0eb; border-left: 4px solid #1a4a3a; padding: 16px; border-radius: 8px; margin-bottom: 24px; }
 .deadline-box p { margin: 0; font-size: 14px; }
 .deadline-box strong { color: #1a4a3a; }
-
 .pick-card { background-color: #f5f0eb; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
 .pick-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
 .pick-name { font-weight: 600; font-size: 16px; color: #2c2320; }
@@ -61,18 +59,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
 .badge-vice { background-color: #e8603c; color: white; }
 .badge-free { background-color: #dcfce7; color: #166534; }
 .badge-hit { background-color: #fee2e2; color: #991b1b; }
-
 .transfer-section { background-color: #f5f0eb; border-radius: 12px; padding: 16px; }
 .transfer-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #e8ddd8; }
 .transfer-row:last-child { border-bottom: none; margin-bottom: 0; }
-.transfer-label { font-size: 12px; color: #8b7765; text-transform: uppercase; }
 .player-name { font-weight: 600; color: #2c2320; }
 .xps-value { font-weight: bold; color: #1a4a3a; }
 .net-gain { font-size: 18px; font-weight: bold; color: #1a4a3a; }
-
 .chip-alert { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
-.chip-alert strong { color: #92400e; }
-
 .cta-button { display: inline-block; background-color: #1a4a3a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 16px; }
 .footer { background-color: #f5f0eb; padding: 24px; text-align: center; font-size: 12px; color: #8b7765; }
 .footer a { color: #1a4a3a; text-decoration: none; }
@@ -101,7 +94,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${captain.name}</div>
-            <div class="pick-meta">${teamMap?.[String(captain.team)] ?? teamMap?.[Number(captain.team)] ?? `Unknown (Team ${captain.team})`} • xPS: ${captain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap[String(captain.team)] || 'Unknown'} • xPS: ${captain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps">${captain.xps.toFixed(1)}</div>
@@ -115,7 +108,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
         <div class="pick-header">
           <div>
             <div class="pick-name">${viceCaptain.name}</div>
-            <div class="pick-meta">${teamMap?.[String(viceCaptain.team)] ?? teamMap?.[Number(viceCaptain.team)] ?? `Unknown (Team ${viceCaptain.team})`} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
+            <div class="pick-meta">${teamMap[String(viceCaptain.team)] || 'Unknown'} • xPS: ${viceCaptain.xps.toFixed(1)}</div>
           </div>
           <div style="text-align: right;">
             <div class="pick-xps" style="color: #e8603c;">${viceCaptain.xps.toFixed(1)}</div>
@@ -135,7 +128,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
           ${topTransfer.transferCost === 0 ? '<span class="badge badge-free">Free Transfer</span>' : `<span class="badge badge-hit">−${topTransfer.transferCost} Hit</span>`}
           <span class="badge" style="background-color: #e8ddd8; color: #5a4d47;">${topTransfer.transfers} transfer${topTransfer.transfers > 1 ? 's' : ''}</span>
         </div>
-        
         <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e8ddd8;">
           <div style="font-size: 12px; color: #8b7765; text-transform: uppercase; margin-bottom: 8px;">Out</div>
           ${topTransfer.out.map((p: any) => `
@@ -148,7 +140,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
           </div>
           `).join('')}
         </div>
-
         <div style="margin-bottom: 16px;">
           <div style="font-size: 12px; color: #8b7765; text-transform: uppercase; margin-bottom: 8px;">In</div>
           ${topTransfer.in.map((p: any) => `
@@ -158,7 +149,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxyge
           </div>
           `).join('')}
         </div>
-
         <div style="background-color: white; padding: 12px; border-radius: 8px;">
           <div style="font-size: 12px; color: #8b7765; margin-bottom: 4px;">Net xPS Gain</div>
           <div class="net-gain">+${topTransfer.netGain}</div>
@@ -230,11 +220,15 @@ async function sendReminderEmail(
     const picks = picksData.picks || []
 
     // Fetch current budget/transfers
-    const freeTransfers = teamData.transfers?.limit ?? 1
     const budget = (teamData.transfers?.bank ?? 0) / 10
+    const freeTransfers = teamData.transfers?.limit ?? 1
 
-    // Call transfer-optimizer with fallback (retry with service role key, graceful failure)
-    let optimizerData = { captainPicks: [], topTransfers: [], chipAlerts: [] }
+    // Call transfer-optimizer with fallback
+    let optimizerData: { captainPicks: any[]; topTransfers: any[]; chipAlerts: any[] } = {
+      captainPicks: [],
+      topTransfers: [],
+      chipAlerts: [],
+    }
     try {
       const optimizerRes = await fetch(`${FUNCTIONS_URL(baseUrl)}/transfer-optimizer`, {
         method: 'POST',
@@ -254,16 +248,15 @@ async function sendReminderEmail(
       console.warn(`transfer-optimizer call failed: ${err}, using fallback data`)
     }
 
-    // Fetch all teams to build teamId → name mapping (string keys to avoid type coercion issues)
+    // Build teamId → short_name map from Supabase teams table
     const { data: teams, error: teamsErr } = await supabase.from('teams').select('id, short_name')
     const teamMap: Record<string, string> = {}
     if (!teamsErr && teams) {
       teams.forEach((t: any) => { teamMap[String(t.id)] = t.short_name })
     }
+    console.log(`teamMap built with ${Object.keys(teamMap).length} teams`)
 
     // Generate email HTML
-    const captain = optimizerData.captainPicks?.[0]
-    console.log('DEBUG teamMap:', JSON.stringify(teamMap), 'captain.team:', captain?.team, typeof captain?.team)
     const emailHtml = generateEmailHtml({
       currentGw,
       footballerName,
@@ -303,7 +296,6 @@ async function sendReminderEmail(
 
 async function checkDeadlineWindow(supabase: any): Promise<{ shouldSend: boolean; reason: string } | null> {
   try {
-    // Fetch next gameweek
     const { data: nextGw, error: gwErr } = await supabase
       .from('gameweeks')
       .select('id, deadline_time')
@@ -328,7 +320,6 @@ async function checkDeadlineWindow(supabase: any): Promise<{ shouldSend: boolean
     console.log(`Deadline: ${deadlineDate.toISOString()}`)
     console.log(`Hours until deadline: ${hoursUntilDeadline.toFixed(1)}`)
 
-    // Send if within 24-26 hours before deadline (2-hour window to avoid double-sends)
     if (hoursUntilDeadline >= 24 && hoursUntilDeadline < 26) {
       return { shouldSend: true, reason: `Within 24-26h window (${hoursUntilDeadline.toFixed(1)}h remaining)` }
     }
@@ -357,7 +348,6 @@ Deno.serve(async (req) => {
     const { teamId, email } = body
 
     if (teamId && email) {
-      // Single targeted send (for manual testing, skip deadline check)
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') || '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
@@ -371,7 +361,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Batch send to all users — check deadline window first
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') || '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
